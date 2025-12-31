@@ -15,13 +15,17 @@ Web Purge is a privacy utility browser extension designed to remove all browser 
 ## Installation
 
 1. Clone the repository:
+
    ```
    git clone https://github.com/yourusername/web-purge.git
    ```
+
 2. Navigate to the project directory:
+
    ```
    cd web-purge
    ```
+
 3. Load the extension in your browser:
    - Open Chrome and go to `chrome://extensions/`
    - Enable "Developer mode"
@@ -54,4 +58,4 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 
 ## Contact
 
-For questions or feedback, please reach out to [your.email@example.com].
+For questions or feedback, please reach out at [https://plus351.com/contact/].

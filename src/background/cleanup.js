@@ -156,7 +156,7 @@ self.cleanSingleDomain = async function (url) {
                 if (new URL(item.url).hostname === hostname) {
                     urlsToDelete.push(item.url);
                 }
-            } catch (e) {}
+            } catch (e) { }
         }
 
         await purgeBrowsingData(hostsToPurge);
