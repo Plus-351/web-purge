@@ -1,23 +1,28 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Web Purge</title>
+    <title></title>
     <link rel="stylesheet" href="popup.css">
 </head>
+
 <body>
     <div id="popup-container">
-        <h1 id="title">Web Purge</h1>
-        <button id="panic-button">PANIC: Clean all enabled targets</button>
-        <button id="clean-domain-button">Clean this domain</button>
+        <h1 id="title"></h1>
+        <button id="panic-button">💥</button>
+        <button id="clean-domain-button"></button>
         <div id="status-summary">
-            <p>Last run: <span id="last-run-timestamp"></span></p>
-            <p>Deleted URLs: <span id="deleted-urls-count"></span></p>
-            <p>Purged origins: <span id="purged-origins-count"></span></p>
+            <p><span id="last-run-label"></span> <span id="last-run-timestamp"></span></p>
+            <p><span id="deleted-urls-label"></span> <span id="deleted-urls-count"></span></p>
+            <p><span id="purged-origins-label"></span> <span id="purged-origins-count"></span></p>
             <p id="last-error" style="color: red;"></p>
         </div>
     </div>
+    <script src="../shared/toast.js"></script>
     <script src="popup.js"></script>
+    <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
 </body>
+
 </html>

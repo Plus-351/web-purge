@@ -3,101 +3,125 @@ document.addEventListener('DOMContentLoaded', function () {
     const autoCleanToggle = document.getElementById('auto-clean-on-startup');
     const historyLookbackInput = document.getElementById('history-lookback-days');
     const exportButton = document.getElementById('export-config');
+    const importButton = document.getElementById('import-config-btn');
     const importInput = document.getElementById('import-config');
     const resetButton = document.getElementById('reset-defaults');
     const form = document.getElementById('options-form');
+    const saveLabel = document.getElementById('save-label');
+    const exportLabel = document.getElementById('export-label');
+    const importLabel = document.getElementById('import-label');
+    const resetLabel = document.getElementById('reset-label');
+    const addDomainText = chrome.i18n.getMessage('add_domain') || 'Add domain';
+    // resize UI removed per user request
 
-    const defaultConfig = {
-        version: 1,
-        behavior: {
-            autoCleanOnStartup: true,
-            historyLookbackDays: 7
-        },
-        ui: {
-            showSensitiveCategory: true
-        },
-        categories: [
-            {
-                id: 'trackers_ads',
-                enabled: true,
-                label: { en: 'Trackers / Ads', es: 'Trackers / Publicidad' },
-                domains: [
-                    'doubleclick.net',
-                    'googlesyndication.com',
-                    'google-analytics.com',
-                    'googletagmanager.com',
-                    'googletagservices.com',
-                    'adsystem.com',
-                    'adnxs.com',
-                    'criteo.com',
-                    'scorecardresearch.com',
-                    'taboola.com',
-                    'outbrain.com'
-                ]
-            },
-            {
-                id: 'social_networks',
-                enabled: true,
-                label: { en: 'Social Networks', es: 'Redes Sociales' },
-                domains: [
-                    'facebook.com',
-                    'fb.com',
-                    'messenger.com',
-                    'instagram.com',
-                    'threads.net',
-                    'tiktok.com',
-                    'x.com',
-                    'twitter.com',
-                    'linkedin.com',
-                    'reddit.com',
-                    'pinterest.com'
-                ]
-            },
-            {
-                id: 'sensitive_sites',
-                enabled: false,
-                label: { en: 'Sensitive Sites', es: 'Sitios Sensibles' },
-                domains: [
-                    'pornhub.com',
-                    'xvideos.com',
-                    'xnxx.com',
-                    'redtube.com',
-                    'youporn.com',
-                    'onlyfans.com',
-                    'loyalfans.com',
-                    'fansly.com',
-                    'redgifs.com',
-                    'fetlife.com'
-                ]
-            },
-            {
-                id: 'custom_domains',
-                enabled: true,
-                label: { en: 'Custom Domains', es: 'Dominios personalizados' },
-                domains: []
-            }
-        ]
-    };
+    // `defaultConfig` will be loaded from `src/options/options.json` at runtime.
+    let defaultConfig = null;
+
+    function loadDefaultConfigFromJson() {
+        const url = chrome.runtime.getURL('src/options/options.json');
+        return fetch(url).then(r => {
+            if (!r.ok) throw new Error('Failed to load options.json');
+            return r.json();
+        }).then(data => {
+            defaultConfig = {
+                version: 1,
+                behavior: (data.behavior || { autoCleanOnStartup: false, historyLookbackDays: 7 }),
+                ui: (data.ui || { showSensitiveCategory: true }),
+                categories: (data.categories || [])
+            };
+            return defaultConfig;
+        }).catch(err => {
+            // fallback minimal defaults
+            defaultConfig = {
+                version: 1,
+                behavior: { autoCleanOnStartup: false, historyLookbackDays: 7 },
+                ui: { showSensitiveCategory: true },
+                categories: []
+            };
+            console.warn('Could not load options.json, using builtin defaults.', err);
+            return defaultConfig;
+        });
+    }
 
     function clearCategoriesUI() {
         categoriesContainer.innerHTML = '';
     }
 
-    function createDomainRow(domainValue) {
+    // domain validation using URL parsing: accepts hostnames or host:port
+    function isValidDomain(d) {
+        if (!d || typeof d !== 'string') return false;
+        const s = d.trim();
+        if (s.length === 0) return false;
+        if (s.indexOf(' ') !== -1) return false;
+        try {
+            const candidate = (s.indexOf('://') === -1) ? ('https://' + s) : s;
+            const u = new URL(candidate);
+            const host = u.hostname || '';
+            if (!host) return false;
+            if (host.indexOf('.') === -1 && host !== 'localhost') return false;
+            return true;
+        } catch (e) {
+            return false;
+        }
+    }
+
+    function createDomainRow(domainEntry, defaultChecked, isEditable) {
+        // domainEntry can be a string or an object { domain, enabled }
+        let domainName = '';
+        let enabled = defaultChecked !== undefined ? !!defaultChecked : true;
+        if (typeof domainEntry === 'string') {
+            domainName = domainEntry;
+        } else if (domainEntry && typeof domainEntry === 'object') {
+            domainName = domainEntry.domain || domainEntry.name || '';
+            enabled = domainEntry.enabled !== undefined ? !!domainEntry.enabled : enabled;
+        }
+
         const div = document.createElement('div');
         div.className = 'domain-row';
-        const input = document.createElement('input');
-        input.type = 'text';
-        input.value = domainValue || '';
-        input.placeholder = 'example.com';
-        input.className = 'domain-input';
-        const remove = document.createElement('button');
-        remove.type = 'button';
-        remove.textContent = 'Eliminar';
-        remove.addEventListener('click', () => div.remove());
-        div.appendChild(input);
-        div.appendChild(remove);
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.checked = enabled;
+        checkbox.className = 'domain-enabled';
+
+        if (isEditable) {
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = domainName || '';
+            input.placeholder = t('example_placeholder') || 'example.com';
+            input.className = 'domain-input';
+
+            const remove = document.createElement('span');
+            remove.className = 'remove-icon';
+            remove.textContent = '🗑️';
+            remove.title = t('delete_domain') || 'Delete domain';
+            remove.addEventListener('click', () => div.remove());
+
+            div.appendChild(checkbox);
+            div.appendChild(input);
+            div.appendChild(remove);
+        } else {
+            const span = document.createElement('span');
+            span.className = 'domain-text';
+            span.textContent = domainName || '';
+            div.appendChild(checkbox);
+            div.appendChild(span);
+        }
         return div;
+    }
+
+    function t(key) {
+        try { return chrome.i18n.getMessage(key) || key; } catch (e) { return key; }
+    }
+
+    // Prefer the extension UI language from chrome.i18n when available
+    let lang = 'en';
+    try {
+        const ui = chrome.i18n.getUILanguage && chrome.i18n.getUILanguage();
+        if (ui) lang = ui.split('-')[0];
+        else lang = (navigator.language || 'en').split('-')[0];
+    } catch (e) {
+        lang = (navigator.language || 'en').split('-')[0];
     }
 
     function renderCategories(config) {
@@ -105,32 +129,100 @@ document.addEventListener('DOMContentLoaded', function () {
         config.categories.forEach(category => {
             const section = document.createElement('section');
             section.className = 'category';
-            const heading = document.createElement('h3');
-            heading.textContent = `${category.label.en} / ${category.label.es}`;
-
-            const enabledLabel = document.createElement('label');
             const checkbox = document.createElement('input');
             checkbox.type = 'checkbox';
             checkbox.checked = !!category.enabled;
             checkbox.dataset.id = category.id;
-            enabledLabel.appendChild(checkbox);
-            enabledLabel.appendChild(document.createTextNode(' Habilitado'));
+            checkbox.className = 'category-checkbox category-enabled';
 
             const domainsList = document.createElement('div');
             domainsList.className = 'domains-list';
+            domainsList.style.display = 'none';
             (category.domains || []).forEach(d => {
-                domainsList.appendChild(createDomainRow(d));
+                const isCustom = category.id === 'custom_domains';
+                domainsList.appendChild(createDomainRow(d, !!category.enabled, isCustom));
             });
 
-            const addBtn = document.createElement('button');
-            addBtn.type = 'button';
-            addBtn.textContent = 'Agregar dominio';
-            addBtn.addEventListener('click', () => domainsList.appendChild(createDomainRow('')));
+            // When category checkbox toggles, update all child domain checkboxes
+            checkbox.addEventListener('change', () => {
+                const checked = !!checkbox.checked;
+                const domainCheckboxes = domainsList.querySelectorAll('.domain-enabled');
+                domainCheckboxes.forEach(cb => { cb.checked = checked; });
+            });
 
-            section.appendChild(heading);
-            section.appendChild(enabledLabel);
+            // Add button only for custom category
+            let addBtn = null;
+            if (category.id === 'custom_domains') {
+                addBtn = document.createElement('button');
+                addBtn.type = 'button';
+                addBtn.className = 'button';
+                addBtn.innerHTML = '➕ ' + addDomainText;
+                addBtn.addEventListener('click', () => {
+                    // expand if not expanded
+                    if (domainsList.style.display !== 'block') {
+                        domainsList.style.display = 'block';
+                        arrow.textContent = '▼';
+                    }
+                    domainsList.appendChild(createDomainRow('', !!checkbox.checked, true));
+                });
+            }
+
+            // header: arrow + checkbox + icon + title
+            const header = document.createElement('div');
+            header.className = 'category-header';
+
+            const arrow = document.createElement('span');
+            arrow.className = 'arrow';
+            arrow.textContent = '▶';
+            arrow.addEventListener('click', () => {
+                const expanded = domainsList.style.display === 'block';
+                domainsList.style.display = expanded ? 'none' : 'block';
+                arrow.textContent = expanded ? '▶' : '▼';
+            });
+
+            const iconSpan = document.createElement('span');
+            const icons = {
+                trackers_ads: '🕵️',
+                social_networks: '👥',
+                sensitive_sites: '⚠️',
+                custom_domains: '✳️'
+            };
+            iconSpan.textContent = category.emoji || icons[category.id] || '•';
+            iconSpan.className = 'category-icon';
+
+            const titleText = document.createElement('span');
+            // Resolve category label with priority:
+            // 1) chrome.i18n message `category_<id>` (preferred)
+            // 2) category.label[lang]
+            // 3) category.label.en
+            // 4) category.id
+            let titleLabel = category.id;
+            try {
+                const i18nKey = 'category_' + category.id;
+                const i18nMsg = (chrome.i18n && chrome.i18n.getMessage) ? chrome.i18n.getMessage(i18nKey) : '';
+                if (i18nMsg && i18nMsg !== i18nKey && i18nMsg.trim() !== '') {
+                    // Use chrome.i18n value if available
+                    titleLabel = i18nMsg;
+                } else if (category.label) {
+                    // Prefer language-specific label from the category data
+                    if (typeof category.label === 'string') titleLabel = category.label;
+                    else titleLabel = category.label[lang] || category.label.en || Object.values(category.label)[0] || category.id;
+                } else {
+                    titleLabel = category.id;
+                }
+            } catch (e) {
+                titleLabel = (category.label && (category.label[lang] || category.label.en)) || category.id;
+            }
+            titleText.textContent = ` ${titleLabel}`;
+
+            header.appendChild(arrow);
+            header.appendChild(checkbox);
+            header.appendChild(iconSpan);
+            header.appendChild(titleText);
+
+            section.appendChild(header);
             section.appendChild(domainsList);
-            section.appendChild(addBtn);
+            if (addBtn) section.appendChild(addBtn);
             categoriesContainer.appendChild(section);
         });
     }
@@ -144,6 +236,54 @@ document.addEventListener('DOMContentLoaded', function () {
             }
             autoCleanToggle.checked = !!(cfg.behavior && cfg.behavior.autoCleanOnStartup);
             historyLookbackInput.value = (cfg.behavior && cfg.behavior.historyLookbackDays) || 7;
+            // localize static labels
+            try {
+                // Set title with gear emoji, remove duplicate subtitle
+                const name = chrome.i18n.getMessage('extension_name') || 'Web Purge';
+                const titleEl = document.getElementById('app-title');
+                if (titleEl) titleEl.textContent = '⚙️ ' + name;
+                try { document.title = chrome.i18n.getMessage('options_title') || name; } catch (e) { }
+                // clear subtitle (we no longer show duplicate name)
+                try { const subtitleEl = document.getElementById('app-subtitle'); if (subtitleEl) subtitleEl.textContent = ''; } catch (e) { }
+                // set alt text for logo
+                try { const logo = document.getElementById('options-logo'); if (logo) logo.alt = name; } catch (e) { }
+                document.getElementById('categories-title').textContent = chrome.i18n.getMessage('options_title') || 'Categories';
+                document.getElementById('behavior-title').textContent = chrome.i18n.getMessage('behavior_title') || 'Behavior';
+                document.getElementById('actions-title').textContent = chrome.i18n.getMessage('actions_title') || 'Global Actions';
+                // localized static labels
+                const sessionWarning = document.getElementById('session-warning');
+                if (sessionWarning) sessionWarning.textContent = t('session_warning');
+                const autoLabel = document.getElementById('auto-clean-label');
+                if (autoLabel) autoLabel.textContent = t('auto_clean_label');
+                const historyLabelEl = document.getElementById('history-label');
+                if (historyLabelEl) historyLabelEl.textContent = t('history_label');
+                const historyInlineEl = document.getElementById('history-inline-note');
+                const historyBlockEl = document.getElementById('history-note-block');
+                if (historyInlineEl || historyBlockEl) {
+                    const note = t('history_note') || '';
+                    // split by first period into short and rest
+                    const idx = note.indexOf('.');
+                    if (idx !== -1) {
+                        const first = note.slice(0, idx + 1).trim();
+                        const rest = note.slice(idx + 1).trim();
+                        if (historyInlineEl) historyInlineEl.textContent = first;
+                        if (historyBlockEl) historyBlockEl.textContent = rest;
+                    } else {
+                        if (historyInlineEl) historyInlineEl.textContent = note;
+                        if (historyBlockEl) historyBlockEl.textContent = '';
+                    }
+                }
+            } catch (e) { }
+            if (exportLabel) exportLabel.textContent = t('export_config');
+            if (importLabel) importLabel.textContent = t('import_config');
+            if (resetLabel) resetLabel.textContent = t('reset_defaults');
+            if (saveLabel) saveLabel.textContent = t('save_label');
+            // set version label from manifest
+            try {
+                const v = (chrome.runtime && chrome.runtime.getManifest) ? chrome.runtime.getManifest().version : null;
+                const versionLabel = document.getElementById('version-label');
+                if (versionLabel) versionLabel.textContent = v ? ("Version: " + v) : '';
+            } catch (e) { }
             renderCategories(cfg);
         });
     }
@@ -151,12 +291,20 @@ document.addEventListener('DOMContentLoaded', function () {
     function collectConfig() {
         const sections = Array.from(categoriesContainer.querySelectorAll('section.category'));
         const categories = sections.map(section => {
-            const checkbox = section.querySelector('input[type="checkbox"]');
+            const checkbox = section.querySelector('.category-enabled');
             const id = checkbox.dataset.id;
-            const title = section.querySelector('h3').textContent || id;
+            const titleSpan = section.querySelector('.category-header span:last-of-type');
+            const title = titleSpan ? titleSpan.textContent.trim() : id;
             const labelParts = title.split(' / ');
-            const inputs = Array.from(section.querySelectorAll('.domain-input'));
-            const domains = inputs.map(i => i.value.trim()).filter(s => s.length > 0);
+            const domainRows = Array.from(section.querySelectorAll('.domain-row'));
+            const domains = domainRows.map(row => {
+                const input = row.querySelector('.domain-input');
+                const cb = row.querySelector('.domain-enabled');
+                const textSpan = row.querySelector('.domain-text');
+                const domainNameRaw = (input && input.value) ? input.value.trim() : (textSpan && textSpan.textContent ? textSpan.textContent.trim() : '');
+                const domainName = isValidDomain(domainNameRaw) ? domainNameRaw : '';
+                return { domain: domainName, enabled: !!(cb && cb.checked) };
+            }).filter(d => d.domain && d.domain.length > 0);
             return {
                 id,
                 enabled: !!checkbox.checked,
@@ -179,7 +327,9 @@ document.addEventListener('DOMContentLoaded', function () {
         e.preventDefault();
         const cfg = collectConfig();
         chrome.storage.sync.set({ webPurgeConfig: cfg }, function () {
-            alert('Configuración guardada');
+            try {
+                showToast(t('save_ok'), 3000, 'success');
+            } catch (e) { showToast('Saved', 3000, 'success'); }
         });
     });
 
@@ -198,6 +348,10 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
+    importButton.addEventListener('click', function () {
+        importInput.click();
+    });
+
     importInput.addEventListener('change', function (event) {
         const file = event.target.files[0];
         if (!file) return;
@@ -206,11 +360,11 @@ document.addEventListener('DOMContentLoaded', function () {
             try {
                 const cfg = JSON.parse(ev.target.result);
                 chrome.storage.sync.set({ webPurgeConfig: cfg }, function () {
-                    alert('Configuración importada');
+                    showToast((t('import_config') || 'Import') + ' OK', 3000, 'success');
                     loadConfig();
                 });
             } catch (e) {
-                alert('Archivo inválido');
+                showToast(t('invalid_file') || 'Invalid file', 3500, 'error');
             }
         };
         reader.readAsText(file);
@@ -218,10 +372,17 @@ document.addEventListener('DOMContentLoaded', function () {
 
     resetButton.addEventListener('click', function () {
         chrome.storage.sync.set({ webPurgeConfig: defaultConfig }, function () {
-            alert('Se restableció la configuración por defecto');
+            showToast(t('reset_defaults') || 'Defaults restored', 3000, 'success');
             loadConfig();
         });
     });
 
-    loadConfig();
+    // showToast provided by shared script (src/shared/toast.js)
+
+    // resize UI removed — use dev-run script flags
+
+    // Load the default config from JSON, then render UI from stored config or defaults
+    loadDefaultConfigFromJson().then(() => {
+        loadConfig();
+    });
 });

@@ -1,61 +1,75 @@
 # Web Purge
 
-Web Purge is a privacy utility browser extension designed to remove all browser data associated with configured target websites. It operates locally without telemetry or external network requests, ensuring user privacy and control.
+Web Purge is a local-first browser extension that helps remove browsing data (history, cookies, site data) associated with configured target websites. It runs entirely on the user's machine without telemetry.
 
-## Table of Contents
+## Quick start
 
-1. [Installation](#installation)
-2. [Usage](#usage)
-3. [Configuration](#configuration)
-4. [Features](#features)
-5. [Contributing](#contributing)
-6. [License](#license)
-7. [Contact](#contact)
+1. Clone the repository and enter it:
 
-## Installation
+```bash
+git clone https://github.com/Plus-351/web-purge.git
+cd web-purge
+```
 
-1. Clone the repository:
+1. Keep translations in sync (recommended):
 
-   ```
-   git clone https://github.com/yourusername/web-purge.git
-   ```
+```bash
+npm run sync-locales
+```
 
-2. Navigate to the project directory:
+1. Start the dev runner (the `predev` script will sync locales automatically):
 
-   ```
-   cd web-purge
-   ```
+```bash
+WINDOW_SIZE=1200,900 CHROME_LANG=es npm run dev
+```
 
-3. Load the extension in your browser:
-   - Open Chrome and go to `chrome://extensions/`
-   - Enable "Developer mode"
-   - Click "Load unpacked" and select the `web-purge` directory.
+1. To build a distributable zip (runs `sync-locales` first):
 
-## Usage
+```bash
+npm run build
+```
 
-- Click the extension icon in the toolbar to open the popup UI.
-- Use the "PANIC" button to clean all enabled targets or the "Clean this domain" button to clean the current domain.
-- Access the options page to configure categories and behaviors.
+## Where to edit
+
+- Translations: edit files under `src/_locales/<lang>/messages.json`. These are the source-of-truth for translations; run `npm run sync-locales` (or `npm run dev`) to copy them into the top-level `_locales` folder that Chrome consumes.
+- Category lists and UI defaults: edit `src/options/options.json` (contains category ids, labels, emojis and domain lists). `src/options/options.js` loads this at runtime.
+
+### What you can modify manually
+
+- `src/options/options.json`: category definitions, emojis and the built-in domain lists. Edits take effect in the Options page immediately (after saving) because the UI loads this JSON at runtime.
+- `src/_locales/<lang>/messages.json`: translation strings. Keep these under `src/_locales` and run `npm run sync-locales` (or `npm run dev`) before loading the extension in Chrome so the top-level `_locales` is up-to-date.
+- `package.json` version: the canonical developer-facing version is in `package.json`. The extension runtime reads the version from `manifest.json`.
+- `manifest.json` version: this is what Chrome shows in the extension UI. We provide an automated sync script — run `npm run sync-version` (or `npm run dev` / `npm run build`) to copy `package.json` → `manifest.json`.
+
+Notes:
+
+- Prefer editing `src/_locales` and `src/options/options.json` as the source-of-truth. Use `npm run sync-locales` and `npm run sync-version` to update runtime/packaging files.
+- If you only change `package.json` version, run `npm run sync-version` to update `manifest.json` before loading the extension.
 
 ## Configuration
 
-The extension's configuration is stored in `chrome.storage.sync`. You can enable or disable categories, add or remove domains, and import/export configurations in JSON format.
+Settings are saved in `chrome.storage.sync`. You can import/export configuration from the Options page as JSON. Default configuration is loaded from `src/options/options.json` when no stored config exists.
+
+## Version
+
+The extension version is managed in `package.json` and displayed at the bottom of the Options page.
 
 ## Features
 
-- Multiple preloaded domain category lists (Trackers, Social Networks, etc.)
-- Manual and automatic cleanup triggers
-- User-friendly popup and options UI
-- Support for English and Spanish languages
+- Preloaded domain category lists (Trackers, Social Networks, Sensitive Sites, Custom Domains)
+- Per-domain enable/disable toggles
+- Manual triggers from popup (panic / clean current domain)
+- Import / export and reset-to-defaults
+- Multilingual UI using Chrome `i18n` (`_locales`)
 
 ## Contributing
 
-Contributions are welcome! Please fork the repository and submit a pull request for any enhancements or bug fixes.
+Contributions welcome — please fork, make changes in `src/` (edit `src/_locales` and `src/options/options.json` as appropriate), and open a pull request.
 
 ## License
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+MIT — see [LICENSE](LICENSE).
 
 ## Contact
 
-For questions or feedback, please reach out at [https://plus351.com/contact/].
+Visit <https://plus351.com/contact/> for feedback.

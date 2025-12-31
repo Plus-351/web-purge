@@ -1,0 +1,90 @@
+{
+    "categories": [
+        {
+            "id": "trackers_ads",
+            "enabled": true,
+            "emoji": "🕵️",
+            "label": {
+                "en": "Trackers / Ads",
+                "es": "Trackers / Publicidad",
+                "pt": "Rastreadores / Anúncios"
+            },
+            "domains": [
+                "doubleclick.net",
+                "googlesyndication.com",
+                "google-analytics.com",
+                "googletagmanager.com",
+                "googletagservices.com",
+                "adsystem.com",
+                "adnxs.com",
+                "criteo.com",
+                "scorecardresearch.com",
+                "taboola.com",
+                "outbrain.com"
+            ]
+        },
+        {
+            "id": "social_networks",
+            "enabled": true,
+            "emoji": "👥",
+            "label": {
+                "en": "Social Networks",
+                "es": "Redes Sociales",
+                "pt": "Redes Sociais"
+            },
+            "domains": [
+                "facebook.com",
+                "fb.com",
+                "messenger.com",
+                "instagram.com",
+                "threads.net",
+                "tiktok.com",
+                "x.com",
+                "twitter.com",
+                "linkedin.com",
+                "reddit.com",
+                "pinterest.com"
+            ]
+        },
+        {
+            "id": "sensitive_sites",
+            "enabled": true,
+            "emoji": "⚠️",
+            "label": {
+                "en": "Sensitive Sites",
+                "es": "Sitios Sensibles",
+                "pt": "Sites Sensíveis"
+            },
+            "domains": [
+                "pornhub.com",
+                "xvideos.com",
+                "xnxx.com",
+                "redtube.com",
+                "youporn.com",
+                "onlyfans.com",
+                "loyalfans.com",
+                "fansly.com",
+                "redgifs.com",
+                "fetlife.com"
+            ]
+        },
+        {
+            "id": "custom_domains",
+            "enabled": false,
+            "emoji": "✳️",
+            "label": {
+                "en": "Custom Domains",
+                "es": "Dominios personalizados",
+                "pt": "Domínios personalizados"
+            },
+            "domains": []
+        }
+    ],
+    "behavior": {
+        "autoCleanOnStartup": false,
+        "historyLookbackDays": 7
+    },
+    "ui": {
+        "showSensitiveCategory": true
+    }
+}

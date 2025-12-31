@@ -26,7 +26,6 @@ Thumbs.db
 # Development scripts and local specs
 SPECS.md
 TECH.md
-scripts/dev-run.sh
 
 # Environment files
 .env

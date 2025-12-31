@@ -56,10 +56,16 @@ async function cleanAllEnabledTargets(config) {
     const urlsToDelete = [];
     const hostsToPurge = new Set();
 
-    // Build a set of target domains from enabled categories
+    // Build a set of target domains from enabled domain entries (new format expects
+    // domains as objects: { domain, enabled }). Only domains with enabled===true
+    // will be considered regardless of category state; categories are informative
+    // and can be used to bulk-toggle domains in the UI.
     const targetDomains = (config.categories || [])
-        .filter(category => category.enabled)
-        .flatMap(category => category.domains || []);
+        .flatMap(category => (category.domains || [])
+            .filter(d => d && (d.enabled === undefined ? true : !!d.enabled))
+            .map(d => (typeof d === 'string' ? d : d.domain))
+            .filter(Boolean)
+        );
 
     // Scan browsing history (configurable lookback)
     const lookbackDays = (config.behavior && Number(config.behavior.historyLookbackDays)) || 7;

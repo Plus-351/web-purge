@@ -11,12 +11,19 @@ try {
 }
 
 chrome.runtime.onInstalled.addListener(async () => {
-    console.log('Web Purge extension installed.');
+    // installation event
     // Optionally perform initial run or setup here
     try {
         const cfg = await self.loadConfig();
         if (cfg.behavior && cfg.behavior.autoCleanOnStartup) {
             await self.cleanAllEnabledTargets(cfg);
+        } else {
+            // If auto-clean is disabled, open the options page so the user can review configuration
+            try {
+                if (chrome.runtime.openOptionsPage) chrome.runtime.openOptionsPage();
+            } catch (e) {
+                console.warn('Could not open options page on install:', e);
+            }
         }
     } catch (e) {
         console.error('Startup install task failed:', e);
@@ -24,11 +31,18 @@ chrome.runtime.onInstalled.addListener(async () => {
 });
 
 chrome.runtime.onStartup.addListener(async () => {
-    console.log('Web Purge extension started.');
+    // startup event
     try {
         const cfg = await self.loadConfig();
         if (cfg.behavior && cfg.behavior.autoCleanOnStartup) {
             await self.cleanAllEnabledTargets(cfg);
+        } else {
+            // show options on startup so user can enable auto-clean if desired
+            try {
+                if (chrome.runtime.openOptionsPage) chrome.runtime.openOptionsPage();
+            } catch (e) {
+                console.warn('Could not open options page on startup:', e);
+            }
         }
     } catch (e) {
         console.error('Startup task failed:', e);
@@ -81,6 +95,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 sendResponse({ success: true, summary: res.lastRunSummary || null });
                 return;
             }
+
+            // resizeWindow handler removed per user request
 
             sendResponse({ success: false, error: 'unknown action' });
         } catch (e) {

@@ -1,45 +1,68 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Web Purge - Opciones</title>
+    <title></title>
     <link rel="stylesheet" href="../popup/popup.css">
     <link rel="stylesheet" href="options.css">
 </head>
 
 <body>
-    <h1>Opciones de Web Purge</h1>
-    <form id="options-form">
-        <h2>Categorías</h2>
-        <div id="categories-container">
-            <!-- Categories will be dynamically populated here -->
+    <header class="options-header">
+        <img id="options-logo" src="../icons/icon128.png" alt="">
+        <div class="title-block">
+            <div id="app-title"></div>
+            <div id="app-subtitle" class="subtitle"></div>
         </div>
-        <p id="session-warning" style="color: #b33;">Eliminar información de algunos dominios puede cerrar las sesiones
-            que tenga abiertas (por ejemplo: redes sociales, correo).</p>
-        <h2>Comportamiento</h2>
-        <label>
-            <input type="checkbox" id="auto-clean-on-startup">
-            Activar limpieza automática al iniciar el navegador
-        </label>
-        <label>
-            Intervalo de historial a escanear (días):
-            <input type="number" id="history-lookback-days" min="0" step="1" value="7">
-            <small>
-                0 = todo el historial.<br>
-                Nota: seleccionar más de 7 días puede hacer la operación significativamente más lenta.
-            </small>
-        </label>
-        <h2>Acciones Globales</h2>
-        <button type="button" id="export-config">Exportar configuración</button>
-        <input type="file" id="import-config" accept="application/json">
-        <button type="button" id="reset-defaults">Restablecer a valores predeterminados</button>
-        <p id="warning-text" style="color: red; display: none;">¡Advertencia! Al limpiar datos sensibles, asegúrese de
-            que no haya información importante que se perderá.</p>
-        <button type="submit">Guardar Cambios</button>
-    </form>
+    </header>
+
+    <div class="columns">
+        <div class="left-col">
+            <h2 id="categories-title"></h2>
+            <div id="session-warning" class="session-warning"></div>
+            <div id="categories-container">
+                <!-- Categories will be dynamically populated here -->
+            </div>
+        </div>
+
+        <div class="right-col">
+            <form id="options-form">
+                <h2 id="behavior-title"></h2>
+                <label class="row-label">
+                    <input type="checkbox" id="auto-clean-on-startup">
+                    <span id="auto-clean-label"></span>
+                </label>
+                <label class="row-label">
+                    <span id="history-label"></span>
+                    <input type="number" id="history-lookback-days" min="0" step="1" value="7">
+                    <small id="history-inline-note" class="history-inline"></small>
+                    <small id="history-note-block" class="history-block"></small>
+                </label>
+
+                <h2 id="actions-title"></h2>
+                <div class="actions">
+                    <button type="button" id="export-config" class="button">📤 <span id="export-label"></span></button>
+                    <button type="button" id="import-config-btn" class="button">📥 <span
+                            id="import-label"></span></button>
+                    <input type="file" id="import-config" accept="application/json" style="display:none">
+                    <button type="button" id="reset-defaults" class="button">♻️ <span id="reset-label"></span></button>
+                </div>
+                <!-- resize controls removed (use dev-run flags instead) -->
+                <p id="warning-text" class="warning" style="display:none"></p>
+                <div class="form-actions">
+                    <button type="submit" class="button">💾 <span id="save-label"></span></button>
+                </div>
+                <div id="version-block" style="margin-top:12px; font-size:12px; color:#666">
+                    <span id="version-label"></span>
+                </div>
+            </form>
+        </div>
+    </div>
+    <script src="../shared/toast.js"></script>
     <script src="options.js"></script>
+    <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
 </body>
 
 </html>

@@ -12,18 +12,22 @@ h1 {
 }
 
 button {
-    background-color: #007bff;
-    color: white;
-    border: none;
+    background: transparent;
+    color: #286a6f;
+    border: 2px solid #286a6f;
     padding: 10px;
-    border-radius: 5px;
+    border-radius: 6px;
     cursor: pointer;
     width: 100%;
     margin-top: 10px;
+    transition: background-color 120ms ease, color 120ms ease, border-color 120ms ease;
 }
 
-button:hover {
-    background-color: #0056b3;
+button:hover,
+button:active {
+    background-color: #286a6f;
+    color: #ffffff;
+    border-color: #286a6f;
 }
 
 .status-summary {
@@ -32,8 +36,62 @@ button:hover {
     color: #555;
 }
 
+/* Make panic button full width and visually distinct */
+#panic-button {
+    width: 100%;
+    height: 44px;
+    border-radius: 8px;
+    padding: 0 8px;
+    font-size: 16px;
+    line-height: 44px;
+    text-align: center;
+    background: transparent;
+    border: 2px solid #8b1d1d;
+    color: #8b1d1d;
+}
+
+#panic-button:hover {
+    background-color: #8b1d1d;
+    border-color: #8b1d1d;
+    color: #fff;
+}
+
 .warning {
     color: red;
     font-weight: bold;
     margin-top: 10px;
+}
+
+/* Toast notifications (popup) */
+#toast-container {
+    position: fixed;
+    right: 12px;
+    bottom: 12px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.toast {
+    background: #222;
+    color: #fff;
+    padding: 8px 10px;
+    border-radius: 8px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+    font-size: 12px;
+    max-width: 280px;
+    opacity: 0.98;
+}
+
+.toast.success {
+    background: #2a7f66;
+}
+
+.toast.error {
+    background: #a33;
+}
+
+.toast.info {
+    background: #333;
 }

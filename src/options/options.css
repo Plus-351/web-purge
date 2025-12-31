@@ -1,5 +1,4 @@
 / web-purge / web-purge / src / options / options.css
-
 /* Options Page Styles */
 
 body {
@@ -32,21 +31,209 @@ h1 {
     margin-right: 10px;
 }
 
-.button {
-    background-color: #007bff;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    padding: 10px 15px;
+.button,
+button,
+input[type="submit"] {
+    background: transparent;
+    color: #286a6f;
+    border: 2px solid #286a6f;
+    border-radius: 6px;
+    padding: 8px 12px;
     cursor: pointer;
+    font-weight: 700;
+    transition: background-color 120ms ease, color 120ms ease, border-color 120ms ease;
 }
 
-.button:hover {
-    background-color: #0056b3;
+.button:hover,
+button:hover,
+input[type="submit"]:hover,
+.button:active,
+button:active,
+input[type="submit"]:active {
+    background-color: #286a6f;
+    color: #ffffff;
+    border-color: #286a6f;
+}
+
+/* Two-column layout */
+.columns {
+    display: flex;
+    gap: 20px;
+}
+
+.left-col {
+    flex: 2.2;
+    min-width: 480px;
+}
+
+.right-col {
+    flex: 1.0;
+    min-width: 320px;
+}
+
+.options-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.options-header img#options-logo {
+    height: 48px;
+}
+
+.title-block #app-title {
+    font-size: 20px;
+    font-weight: 700;
+}
+
+.title-block .subtitle {
+    font-size: 14px;
+    color: #666;
+}
+
+.category-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.category-header .arrow {
+    cursor: pointer;
+    user-select: none;
+    width: 18px;
+    display: inline-block;
+}
+
+.category-header .category-checkbox {
+    margin-right: 6px;
+}
+
+.category-header .category-icon {
+    margin-right: 6px;
+}
+
+.domains-list {
+    padding-left: 28px;
+    margin-top: 8px;
+}
+
+.domain-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.domain-input {
+    flex: 1;
+    padding: 6px 8px;
+    border: 1px solid #dcdcdc;
+    border-radius: 4px;
+}
+
+.domain-input:focus {
+    outline: none;
+    border-color: #286a6f;
+    box-shadow: 0 0 0 3px rgba(40, 106, 111, 0.06);
+}
+
+.remove-icon {
+    cursor: pointer;
+    padding: 4px;
+}
+
+.row-label {
+    display: block;
+    margin-bottom: 10px;
+}
+
+/* Make specific warning texts red and prominent */
+#session-warning {
+    color: #b70b0b;
+    font-weight: 400;
+}
+
+#history-note-block,
+.history-block {
+    color: #b70b0b;
+    font-weight: 400;
+    display: block;
+    margin-top: 6px;
+}
+
+#history-inline-note,
+.history-inline {
+    color: #b70b0b;
+    font-weight: 400;
+    display: inline-block;
+    margin-left: 8px;
+}
+
+/* Reduce width of the numeric input for history days */
+#history-lookback-days {
+    width: 84px;
+    max-width: 100%;
+    display: inline-block;
+    vertical-align: middle;
+    margin-left: 8px;
+}
+
+/* Slightly larger font for right-column form contents (not titles) */
+.right-col,
+.right-col label,
+.right-col .actions {
+    font-size: 15px;
+}
+
+.actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.form-actions {
+    margin-top: 12px;
 }
 
 .warning {
     color: red;
     font-weight: bold;
     margin-top: 10px;
+}
+
+/* Toast notifications */
+#toast-container {
+    position: fixed;
+    right: 16px;
+    bottom: 20px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.toast {
+    background: #222;
+    color: #fff;
+    padding: 10px 14px;
+    border-radius: 8px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+    font-size: 13px;
+    max-width: 320px;
+    opacity: 0.98;
+}
+
+.toast.success {
+    background: #2a7f66;
+}
+
+.toast.error {
+    background: #a33;
+}
+
+.toast.info {
+    background: #333;
 }

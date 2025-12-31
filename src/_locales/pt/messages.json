@@ -1,0 +1,114 @@
+{
+    "extension_name": {
+        "message": "Web Purge",
+        "description": "Nome da extensão"
+    },
+    "options_title": {
+        "message": "Opções do Web Purge",
+        "description": "Título da página de opções"
+    },
+    "panic_button": {
+        "message": "Pânico: Eliminar Todo",
+        "description": "Rótulo do botão principal no popup"
+    },
+    "clean_current_domain": {
+        "message": "Limpar este domínio",
+        "description": "Rótulo do botão secundário no popup"
+    },
+    "export_config": {
+        "message": "Exportar configuração",
+        "description": "Rótulo para exportar a configuração"
+    },
+    "import_config": {
+        "message": "Importar configuração",
+        "description": "Rótulo para importar a configuração"
+    },
+    "reset_defaults": {
+        "message": "Reiniciar para padrões",
+        "description": "Rótulo para reiniciar para padrões"
+    },
+    "add_domain": {
+        "message": "Adicionar domínio",
+        "description": "Texto do botão para añadir dominio personalizado"
+    },
+    "save_ok": {
+        "message": "Configuração salva",
+        "description": "Mensagem de sucesso ao guardar"
+    },
+    "save_label": {
+        "message": "Salvar alterações",
+        "description": "Rótulo do botão salvar"
+    },
+    "session_warning": {
+        "message": "Remover dados de alguns domínios pode desconectá-lo de serviços.",
+        "description": "Aviso de sessão mostrado nas opções"
+    },
+    "auto_clean_label": {
+        "message": "Ativar limpeza automática ao iniciar o navegador",
+        "description": "Rótulo para o toggle de limpeza automática"
+    },
+    "history_label": {
+        "message": "Intervalo de histórico a escanear (dias):",
+        "description": "Rótulo para o intervalo de historial"
+    },
+    "history_note": {
+        "message": "0 = todo o histórico. Selecionar mais de 7 dias pode ser mais lento.",
+        "description": "Nota sobre o intervalo de histórico"
+    },
+    "example_placeholder": {
+        "message": "example.com",
+        "description": "Placeholder para o input de domínio"
+    },
+    "delete_domain": {
+        "message": "Eliminar domínio",
+        "description": "Título do ícone excluir domínio"
+    },
+    "invalid_file": {
+        "message": "Arquivo inválido",
+        "description": "Mensagem de erro ao importar"
+    },
+    "options_subtitle": {
+        "message": "⚙️ Web Purge",
+        "description": "Subtítulo mostrado na página de opções"
+    },
+    "behavior_title": {
+        "message": "Comportamento",
+        "description": "Título da seção de comportamento"
+    },
+    "actions_title": {
+        "message": "Ações Globais",
+        "description": "Título da seção de ações"
+    },
+    "category_trackers_ads": {
+        "message": "Rastreadores / Anúncios",
+        "description": "Etiqueta de categoría"
+    },
+    "category_social_networks": {
+        "message": "Redes Sociais",
+        "description": "Etiqueta de categoría"
+    },
+    "category_sensitive_sites": {
+        "message": "Sites Sensíveis",
+        "description": "Etiqueta de categoría"
+    },
+    "category_custom_domains": {
+        "message": "Domínios personalizados",
+        "description": "Etiqueta de categoría"
+    },
+    "last_run": {
+        "message": "Última execução: {timestamp}",
+        "description": "Mostra a última execução"
+    },
+    "deleted_urls_count": {
+        "message": "URLs eliminadas: {count}",
+        "description": "Mostra a quantidade de URLs eliminadas"
+    },
+    "purged_origins_count": {
+        "message": "Origens purgadas: {count}",
+        "description": "Mostra a quantidade de origens purgadas"
+    },
+    "last_error": {
+        "message": "Último erro: {error}",
+        "description": "Mostra a última mensagem de erro"
+    }
+}
