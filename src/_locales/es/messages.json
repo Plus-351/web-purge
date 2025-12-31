@@ -1,0 +1,62 @@
+{
+  "extension_name": {
+    "message": "Web Purge",
+    "description": "Nombre de la extensión"
+  },
+  "popup_title": {
+    "message": "Limpiar Datos del Navegador",
+    "description": "Título del popup de la extensión"
+  },
+  "panic_button": {
+    "message": "PÁNICO: Limpiar todos los objetivos habilitados",
+    "description": "Texto del botón principal en el popup"
+  },
+  "clean_current_domain": {
+    "message": "Limpiar este dominio",
+    "description": "Texto del botón secundario en el popup"
+  },
+  "last_run": {
+    "message": "Última ejecución: {timestamp}",
+    "description": "Texto que muestra la última vez que se ejecutó la limpieza"
+  },
+  "deleted_urls_count": {
+    "message": "URLs eliminadas: {count}",
+    "description": "Texto que muestra la cantidad de URLs eliminadas"
+  },
+  "purged_origins_count": {
+    "message": "Orígenes purgados: {count}",
+    "description": "Texto que muestra la cantidad de orígenes purgados"
+  },
+  "last_error": {
+    "message": "Último error: {error}",
+    "description": "Texto que muestra el último error, si lo hay"
+  },
+  "options_title": {
+    "message": "Opciones de Web Purge",
+    "description": "Título de la página de opciones"
+  },
+  "category_enable": {
+    "message": "Habilitar categoría",
+    "description": "Texto para habilitar una categoría"
+  },
+  "category_disable": {
+    "message": "Deshabilitar categoría",
+    "description": "Texto para deshabilitar una categoría"
+  },
+  "import_config": {
+    "message": "Importar configuración",
+    "description": "Texto para importar la configuración"
+  },
+  "export_config": {
+    "message": "Exportar configuración",
+    "description": "Texto para exportar la configuración"
+  },
+  "reset_defaults": {
+    "message": "Restablecer a valores predeterminados",
+    "description": "Texto para restablecer la configuración a los valores predeterminados"
+  },
+  "sensitive_category_warning": {
+    "message": "Advertencia: Esta categoría contiene sitios sensibles.",
+    "description": "Texto de advertencia para categorías sensibles"
+  }
+}

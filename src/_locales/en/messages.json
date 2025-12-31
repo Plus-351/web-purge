@@ -1,0 +1,58 @@
+{
+  "extension_name": {
+    "message": "Web Purge",
+    "description": "The name of the extension."
+  },
+  "popup_title": {
+    "message": "Web Purge - Clean Your Browsing Data",
+    "description": "Title of the popup UI."
+  },
+  "panic_button": {
+    "message": "PANIC: Clean all enabled targets",
+    "description": "Label for the primary button in the popup."
+  },
+  "clean_current_domain": {
+    "message": "Clean this domain",
+    "description": "Label for the secondary button in the popup."
+  },
+  "last_run": {
+    "message": "Last run: {timestamp}",
+    "description": "Displays the last run timestamp."
+  },
+  "deleted_urls_count": {
+    "message": "Deleted URLs: {count}",
+    "description": "Displays the count of deleted history URLs."
+  },
+  "purged_origins_count": {
+    "message": "Purged origins: {count}",
+    "description": "Displays the count of purged origins."
+  },
+  "last_error": {
+    "message": "Last error: {error}",
+    "description": "Displays the last error message if any."
+  },
+  "category_enable": {
+    "message": "Enable",
+    "description": "Label for enabling a category."
+  },
+  "category_disable": {
+    "message": "Disable",
+    "description": "Label for disabling a category."
+  },
+  "export_config": {
+    "message": "Export Configuration",
+    "description": "Label for exporting the configuration."
+  },
+  "import_config": {
+    "message": "Import Configuration",
+    "description": "Label for importing the configuration."
+  },
+  "reset_defaults": {
+    "message": "Reset to Defaults",
+    "description": "Label for resetting the configuration to defaults."
+  },
+  "warning_sensitive": {
+    "message": "Warning: This category contains sensitive sites.",
+    "description": "Warning message for sensitive categories."
+  }
+}

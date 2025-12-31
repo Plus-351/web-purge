@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Purge - Opciones</title>
+    <link rel="stylesheet" href="../popup/popup.css">
+    <link rel="stylesheet" href="options.css">
+</head>
+<body>
+    <h1>Opciones de Web Purge</h1>
+    <form id="options-form">
+        <h2>Categorías</h2>
+        <div id="categories-container">
+            <!-- Categories will be dynamically populated here -->
+        </div>
+        <p id="session-warning" style="color: #b33;">Eliminar información de algunos dominios puede cerrar las sesiones que tenga abiertas (por ejemplo: redes sociales, correo).</p>
+        <h2>Comportamiento</h2>
+            <label>
+                <input type="checkbox" id="auto-clean-on-startup">
+                Activar limpieza automática al iniciar el navegador
+            </label>
+            <label>
+                Intervalo de historial a escanear (días):
+                <input type="number" id="history-lookback-days" min="0" step="1" value="7">
+                <small>
+                    0 = todo el historial.<br>
+                    Nota: seleccionar más de 7 días puede hacer la operación significativamente más lenta.
+                </small>
+            </label>
+        <h2>Acciones Globales</h2>
+        <button type="button" id="export-config">Exportar configuración</button>
+        <input type="file" id="import-config" accept="application/json">
+        <button type="button" id="reset-defaults">Restablecer a valores predeterminados</button>
+        <p id="warning-text" style="color: red; display: none;">¡Advertencia! Al limpiar datos sensibles, asegúrese de que no haya información importante que se perderá.</p>
+        <button type="submit">Guardar Cambios</button>
+    </form>
+    <script src="options.js"></script>
+</body>
+</html>

@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Purge</title>
+    <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+    <div id="popup-container">
+        <h1 id="title">Web Purge</h1>
+        <button id="panic-button">PANIC: Clean all enabled targets</button>
+        <button id="clean-domain-button">Clean this domain</button>
+        <div id="status-summary">
+            <p>Last run: <span id="last-run-timestamp"></span></p>
+            <p>Deleted URLs: <span id="deleted-urls-count"></span></p>
+            <p>Purged origins: <span id="purged-origins-count"></span></p>
+            <p id="last-error" style="color: red;"></p>
+        </div>
+    </div>
+    <script src="popup.js"></script>
+</body>
+</html>
