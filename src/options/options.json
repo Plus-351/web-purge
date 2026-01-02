@@ -87,4 +87,7 @@
     "ui": {
         "showSensitiveCategory": true
     }
+    ,
+    "defaultsVersion": "1.0.0",
+    "remoteDefaultsUrl": "https://YOUR_HOST/path/web-purge-defaults.json"
 }

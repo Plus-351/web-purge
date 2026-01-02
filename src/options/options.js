@@ -24,7 +24,8 @@ document.addEventListener('DOMContentLoaded', function () {
             return r.json();
         }).then(data => {
             defaultConfig = {
-                version: 1,
+                version: data.defaultsVersion || 1,
+                remoteDefaultsUrl: data.remoteDefaultsUrl || '',
                 behavior: (data.behavior || { autoCleanOnStartup: false, historyLookbackDays: 7 }),
                 ui: (data.ui || { showSensitiveCategory: true }),
                 categories: (data.categories || [])
@@ -41,6 +42,83 @@ document.addEventListener('DOMContentLoaded', function () {
             console.warn('Could not load options.json, using builtin defaults.', err);
             return defaultConfig;
         });
+    }
+
+    // Fetch remote defaults if configured and merge non-destructively with user config
+    async function fetchAndApplyRemoteDefaultsIfAny() {
+        try {
+            if (!defaultConfig || !defaultConfig.remoteDefaultsUrl) return { applied: false };
+            const url = defaultConfig.remoteDefaultsUrl;
+            // placeholder check
+            if (url.indexOf('YOUR_HOST') !== -1) return { applied: false };
+
+            const resp = await fetch(url, { cache: 'no-cache' });
+            if (!resp.ok) return { applied: false };
+            const remote = await resp.json();
+            if (!remote || !remote.defaultsVersion) return { applied: false };
+
+            // load meta about last applied defaults
+            const meta = await new Promise(resolve => chrome.storage.local.get('defaultsMeta', res => resolve(res.defaultsMeta || {})));
+            const lastApplied = meta.appliedDefaultsVersion || null;
+            if (lastApplied && (lastApplied === remote.defaultsVersion)) return { applied: false };
+
+            // validate minimal shape
+            if (!Array.isArray(remote.categories)) return { applied: false };
+
+            // merge remote defaults into current stored config
+            const stored = await new Promise(resolve => chrome.storage.sync.get('webPurgeConfig', res => resolve(res.webPurgeConfig || null)));
+            let userCfg = stored || defaultConfig;
+
+            // backup
+            try {
+                const now = Date.now();
+                await new Promise(resolve => chrome.storage.local.set({ ['backup_' + now]: userCfg }, resolve));
+            } catch (e) { /* ignore */ }
+
+            // Build maps for easy lookup
+            const userById = {};
+            (userCfg.categories || []).forEach(c => { userById[c.id] = c; });
+
+            let changes = false;
+            remote.categories.forEach(rc => {
+                const rid = rc.id;
+                if (!userById[rid]) {
+                    // new category: add entirely
+                    userCfg.categories = userCfg.categories || [];
+                    userCfg.categories.push(JSON.parse(JSON.stringify(rc)));
+                    changes = true;
+                } else {
+                    // existing category: merge domains non-destructively
+                    const uc = userById[rid];
+                    const ucDomains = (uc.domains || []).map(d => (typeof d === 'string' ? d : (d.domain || '')));
+                    (rc.domains || []).forEach(rd => {
+                        const rdDomain = (typeof rd === 'string') ? rd : (rd.domain || '');
+                        if (!rdDomain) return;
+                        if (!ucDomains.includes(rdDomain)) {
+                            uc.domains = uc.domains || [];
+                            // add with default enabled state from remote if present
+                            if (typeof rd === 'string') uc.domains.push({ domain: rdDomain, enabled: true });
+                            else uc.domains.push({ domain: rdDomain, enabled: !!rd.enabled });
+                            changes = true;
+                        }
+                    });
+                }
+            });
+
+            if (changes) {
+                // save merged config and update meta
+                await new Promise(resolve => chrome.storage.sync.set({ webPurgeConfig: userCfg }, resolve));
+                await new Promise(resolve => chrome.storage.local.set({ defaultsMeta: { appliedDefaultsVersion: remote.defaultsVersion, lastDefaultsFetchTime: Date.now() } }, resolve));
+                return { applied: true, version: remote.defaultsVersion };
+            } else {
+                // still update meta so we don't refetch repeatedly
+                await new Promise(resolve => chrome.storage.local.set({ defaultsMeta: { appliedDefaultsVersion: remote.defaultsVersion, lastDefaultsFetchTime: Date.now() } }, resolve));
+                return { applied: false };
+            }
+        } catch (e) {
+            console.warn('Remote defaults fetch failed', e);
+            return { applied: false };
+        }
     }
 
     function clearCategoriesUI() {
@@ -285,6 +363,22 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (versionLabel) versionLabel.textContent = v ? ("Version: " + v) : '';
             } catch (e) { }
             renderCategories(cfg);
+            // after render, attempt to fetch remote defaults and apply if any
+            fetchAndApplyRemoteDefaultsIfAny().then(res => {
+                if (res && res.applied) {
+                    // notify user to review changes
+                    try { showToast(`Defaults updated to ${res.version}`, 5000, 'info'); } catch (e) { }
+                    const banner = document.getElementById('defaults-banner');
+                    const bannerText = document.getElementById('defaults-banner-text');
+                    const reviewBtn = document.getElementById('defaults-banner-review');
+                    if (banner && bannerText) {
+                        bannerText.textContent = `Defaults have been updated to ${res.version}.`;
+                        if (reviewBtn) reviewBtn.style.display = 'inline-block';
+                        banner.style.display = 'block';
+                        reviewBtn.addEventListener('click', () => { loadConfig(); banner.style.display = 'none'; });
+                    }
+                }
+            }).catch(() => { /* ignore */ });
         });
     }
 
