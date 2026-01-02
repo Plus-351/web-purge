@@ -51,77 +51,118 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Fetch remote defaults if configured and merge non-destructively with user config
     async function fetchAndApplyRemoteDefaultsIfAny() {
-            try {
-                const url = REMOTE_DEFAULTS_URL || (defaultConfig && defaultConfig.remoteDefaultsUrl);
-                if (!url) return { applied: false };
+        try {
+            const url = REMOTE_DEFAULTS_URL || (defaultConfig && defaultConfig.remoteDefaultsUrl);
+            if (!url) return { applied: false };
             // placeholder check
-                if (url.indexOf('YOUR_HOST') !== -1) return { applied: false };
+            if (url.indexOf('YOUR_HOST') !== -1) return { applied: false };
 
             const resp = await fetch(url, { cache: 'no-cache' });
             if (!resp.ok) return { applied: false };
             const remote = await resp.json();
             if (!remote || !remote.defaultsVersion) return { applied: false };
 
-            // load meta about last applied defaults
+            // delegate to the shared merge helper
+            return await mergeDefaultsAndSave(remote);
+        } catch (e) {
+            console.warn('Remote defaults fetch failed', e);
+            return { applied: false };
+        }
+    }
+
+    // Normalize domain string for deduping
+    function normalizeDomainName(s) {
+        if (!s) return '';
+        const raw = (typeof s === 'string') ? s : (s.domain || '');
+        let d = raw.trim().toLowerCase();
+        if (d.startsWith('*.')) d = d.slice(2);
+        // strip protocol if present
+        if (d.indexOf('://') !== -1) {
+            try { d = (new URL(d)).hostname; } catch (e) { /* ignore */ }
+        }
+        // remove port
+        if (d.indexOf(':') !== -1) d = d.split(':')[0];
+        return d;
+    }
+
+    // Merge helper that performs global dedupe across categories and saves merged config
+    async function mergeDefaultsAndSave(remote) {
+        try {
+            if (!remote || !remote.defaultsVersion) return { applied: false };
+            // validate shape
+            if (!Array.isArray(remote.categories)) return { applied: false };
+
             const meta = await new Promise(resolve => chrome.storage.local.get('defaultsMeta', res => resolve(res.defaultsMeta || {})));
             const lastApplied = meta.appliedDefaultsVersion || null;
             if (lastApplied && (lastApplied === remote.defaultsVersion)) return { applied: false };
 
-            // validate minimal shape
-            if (!Array.isArray(remote.categories)) return { applied: false };
-
-            // merge remote defaults into current stored config
             const stored = await new Promise(resolve => chrome.storage.sync.get('webPurgeConfig', res => resolve(res.webPurgeConfig || null)));
-            let userCfg = stored || defaultConfig;
+            let userCfg = stored || JSON.parse(JSON.stringify(defaultConfig || { categories: [] }));
 
             // backup
             try {
                 const now = Date.now();
-                await new Promise(resolve => chrome.storage.local.set({ ['backup_' + now]: userCfg }, resolve));
+                const bk = {};
+                bk['backup_' + now] = userCfg;
+                await new Promise(resolve => chrome.storage.local.set(bk, resolve));
             } catch (e) { /* ignore */ }
 
-            // Build maps for easy lookup
-            const userById = {};
-            (userCfg.categories || []).forEach(c => { userById[c.id] = c; });
+            // build global existing set
+            const existing = new Set();
+            (userCfg.categories || []).forEach(c => {
+                (c.domains || []).forEach(d => {
+                    const nd = normalizeDomainName(d);
+                    if (nd) existing.add(nd);
+                });
+            });
 
             let changes = false;
+
             remote.categories.forEach(rc => {
                 const rid = rc.id;
-                if (!userById[rid]) {
-                    // new category: add entirely
-                    userCfg.categories = userCfg.categories || [];
-                    userCfg.categories.push(JSON.parse(JSON.stringify(rc)));
-                    changes = true;
-                } else {
-                    // existing category: merge domains non-destructively
-                    const uc = userById[rid];
-                    const ucDomains = (uc.domains || []).map(d => (typeof d === 'string' ? d : (d.domain || '')));
+                let uc = (userCfg.categories || []).find(c => c.id === rid);
+                if (!uc) {
+                    // new category: add domains that don't exist anywhere
+                    const newDomains = [];
                     (rc.domains || []).forEach(rd => {
-                        const rdDomain = (typeof rd === 'string') ? rd : (rd.domain || '');
-                        if (!rdDomain) return;
-                        if (!ucDomains.includes(rdDomain)) {
-                            uc.domains = uc.domains || [];
-                            // add with default enabled state from remote if present
-                            if (typeof rd === 'string') uc.domains.push({ domain: rdDomain, enabled: true });
-                            else uc.domains.push({ domain: rdDomain, enabled: !!rd.enabled });
-                            changes = true;
-                        }
+                        const domain = (typeof rd === 'string') ? rd : (rd.domain || '');
+                        const nd = normalizeDomainName(domain);
+                        if (!nd) return;
+                        if (existing.has(nd)) return;
+                        existing.add(nd);
+                        newDomains.push({ domain: domain, enabled: !!(typeof rd === 'object' ? (rd.enabled !== undefined ? rd.enabled : true) : true) });
+                    });
+                    if (newDomains.length > 0) {
+                        userCfg.categories = userCfg.categories || [];
+                        userCfg.categories.push({ id: rc.id, enabled: rc.enabled !== undefined ? !!rc.enabled : true, emoji: rc.emoji || rc.icon || '', label: rc.label || {}, domains: newDomains });
+                        changes = true;
+                    }
+                } else {
+                    // existing category: add domains that don't exist anywhere
+                    (rc.domains || []).forEach(rd => {
+                        const domain = (typeof rd === 'string') ? rd : (rd.domain || '');
+                        const nd = normalizeDomainName(domain);
+                        if (!nd) return;
+                        if (existing.has(nd)) return;
+                        uc.domains = uc.domains || [];
+                        uc.domains.push({ domain: domain, enabled: !!(typeof rd === 'object' ? (rd.enabled !== undefined ? rd.enabled : true) : true) });
+                        existing.add(nd);
+                        changes = true;
                     });
                 }
             });
 
             if (changes) {
-                // save merged config and update meta
                 await new Promise(resolve => chrome.storage.sync.set({ webPurgeConfig: userCfg }, resolve));
                 await new Promise(resolve => chrome.storage.local.set({ defaultsMeta: { appliedDefaultsVersion: remote.defaultsVersion, lastDefaultsFetchTime: Date.now() } }, resolve));
                 return { applied: true, version: remote.defaultsVersion };
             } else {
-                // still update meta so we don't refetch repeatedly
+                // update meta anyway to avoid re-checking too often
                 await new Promise(resolve => chrome.storage.local.set({ defaultsMeta: { appliedDefaultsVersion: remote.defaultsVersion, lastDefaultsFetchTime: Date.now() } }, resolve));
                 return { applied: false };
             }
         } catch (e) {
-            console.warn('Remote defaults fetch failed', e);
+            console.warn('mergeDefaultsAndSave failed', e);
             return { applied: false };
         }
     }
