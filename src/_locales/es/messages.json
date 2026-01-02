@@ -154,13 +154,5 @@
   "backup_error": {
     "message": "No se pudo restaurar la copia",
     "description": "Notificar cuando falla restaurar backup"
-  },
-  "backup_restored": {
-    "message": "Copia restaurada",
-    "description": "Notificar cuando la copia es restaurada"
-  },
-  "backup_error": {
-    "message": "No se pudo restaurar la copia",
-    "description": "Notificar cuando falla restaurar backup"
   }
 }

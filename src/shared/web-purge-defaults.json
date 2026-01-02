@@ -1,149 +1,149 @@
 {
-    "defaultsVersion": "0.1.3",
-    "categories": [
-        {
-            "id": "trackers_ads",
-            "order": 1,
-            "enabled": true,
-            "emoji": "🕵️",
-            "label": {
-                "en": "Trackers / Ads",
-                "es": "Trackers / Publicidad",
-                "pt": "Rastreadores / Anúncios"
-            },
-            "domains": [
-                "doubleclick.net",
-                "googlesyndication.com",
-                "google-analytics.com",
-                "googletagmanager.com",
-                "googletagservices.com",
-                "adsystem.com",
-                "adnxs.com",
-                "criteo.com",
-                "scorecardresearch.com",
-                "taboola.com",
-                "outbrain.com"
-            ]
-        },
-        {
-            "id": "social_networks",
-            "order": 2,
-            "enabled": false,
-            "emoji": "👥",
-            "label": {
-                "en": "Social Networks",
-                "es": "Redes Sociales",
-                "pt": "Redes Sociais"
-            },
-            "domains": [
-                "facebook.com",
-                "fb.com",
-                "messenger.com",
-                "instagram.com",
-                "threads.net",
-                "tiktok.com",
-                "x.com",
-                "twitter.com",
-                "linkedin.com",
-                "reddit.com",
-                "pinterest.com"
-            ]
-        },
-        {
-            "id": "sensitive_sites",
-            "order": 999,
-            "enabled": true,
-            "emoji": "🔞",
-            "label": {
-                "en": "Sensitive +18",
-                "es": "Sensitive +18",
-                "pt": "Sensitive +18"
-            },
-            "domains": [
-                "brazzers.com",
-                "cam4.com",
-                "chaturbate.com",
-                "fetlife.com",
-                "fansly.com",
-                "livejasmin.com",
-                "loyalfans.com",
-                "myfreecams.com",
-                "pornhub.com",
-                "pornhubpremium.com",
-                "redgifs.com",
-                "redtube.com",
-                "sextube.com",
-                "tnaflix.com",
-                "xhamster.com",
-                "xhamster2.com",
-                "xvideos.com",
-                "xnxx.com",
-                "youporn.com"
-            ]
-        },
-        {
-            "id": "custom_domains",
-            "order": 9999,
-            "enabled": false,
-            "emoji": "🛠️",
-            "label": {
-                "en": "Custom Domains",
-                "es": "Dominios personalizados",
-                "pt": "Domínios personalizados"
-            },
-            "domains": []
-        },
-        {
-            "id": "fingerprinting",
-            "order": 3,
-            "enabled": false,
-            "emoji": "🧬",
-            "label": {
-                "en": "Fingerprinting",
-                "es": "Huella digital",
-                "pt": "Impressão digital"
-            },
-            "domains": [
-                "fingerprintjs.com",
-                "fingerprinting.io",
-                "clientjs.org"
-            ]
-        },
-        {
-            "id": "paywalls",
-            "order": 4,
-            "enabled": false,
-            "emoji": "💰",
-            "label": {
-                "en": "Paywalls",
-                "es": "Muros de pago",
-                "pt": "Paywalls"
-            },
-            "domains": [
-                "medium.com",
-                "nytimes.com",
-                "wsj.com",
-                "bloomberg.com",
-                "ft.com"
-            ]
-        },
-        {
-            "id": "cdn_hosting",
-            "order": 5,
-            "enabled": false,
-            "emoji": "📦",
-            "label": {
-                "en": "CDN / Hosting",
-                "es": "CDN / Hosting",
-                "pt": "CDN / Hospedagem"
-            },
-            "domains": [
-                "cloudflare.com",
-                "akamaihd.net",
-                "amazonaws.com",
-                "cdnjs.cloudflare.com",
-                "jsdelivr.net"
-            ]
-        }
-    ]
+  "defaultsVersion": "0.1.3",
+  "categories": [
+    {
+      "id": "trackers_ads",
+      "order": 1,
+      "enabled": true,
+      "emoji": "🕵️",
+      "label": {
+        "en": "Trackers / Ads",
+        "es": "Trackers / Publicidad",
+        "pt": "Rastreadores / Anúncios"
+      },
+      "domains": [
+        "doubleclick.net",
+        "googlesyndication.com",
+        "google-analytics.com",
+        "googletagmanager.com",
+        "googletagservices.com",
+        "adsystem.com",
+        "adnxs.com",
+        "criteo.com",
+        "scorecardresearch.com",
+        "taboola.com",
+        "outbrain.com"
+      ]
+    },
+    {
+      "id": "social_networks",
+      "order": 2,
+      "enabled": false,
+      "emoji": "👥",
+      "label": {
+        "en": "Social Networks",
+        "es": "Redes Sociales",
+        "pt": "Redes Sociais"
+      },
+      "domains": [
+        "facebook.com",
+        "fb.com",
+        "messenger.com",
+        "instagram.com",
+        "threads.net",
+        "tiktok.com",
+        "x.com",
+        "twitter.com",
+        "linkedin.com",
+        "reddit.com",
+        "pinterest.com"
+      ]
+    },
+    {
+      "id": "sensitive_sites",
+      "order": 999,
+      "enabled": true,
+      "emoji": "🔞",
+      "label": {
+        "en": "Sensitive +18",
+        "es": "Sensitive +18",
+        "pt": "Sensitive +18"
+      },
+      "domains": [
+        "brazzers.com",
+        "cam4.com",
+        "chaturbate.com",
+        "fetlife.com",
+        "fansly.com",
+        "livejasmin.com",
+        "loyalfans.com",
+        "myfreecams.com",
+        "pornhub.com",
+        "pornhubpremium.com",
+        "redgifs.com",
+        "redtube.com",
+        "sextube.com",
+        "tnaflix.com",
+        "xhamster.com",
+        "xhamster2.com",
+        "xvideos.com",
+        "xnxx.com",
+        "youporn.com"
+      ]
+    },
+    {
+      "id": "custom_domains",
+      "order": 9999,
+      "enabled": false,
+      "emoji": "🛠️",
+      "label": {
+        "en": "Custom Domains",
+        "es": "Dominios personalizados",
+        "pt": "Domínios personalizados"
+      },
+      "domains": []
+    },
+    {
+      "id": "fingerprinting",
+      "order": 3,
+      "enabled": false,
+      "emoji": "🧬",
+      "label": {
+        "en": "Fingerprinting",
+        "es": "Huella digital",
+        "pt": "Impressão digital"
+      },
+      "domains": [
+        "fingerprintjs.com",
+        "fingerprinting.io",
+        "clientjs.org"
+      ]
+    },
+    {
+      "id": "paywalls",
+      "order": 4,
+      "enabled": false,
+      "emoji": "💰",
+      "label": {
+        "en": "Paywalls",
+        "es": "Muros de pago",
+        "pt": "Paywalls"
+      },
+      "domains": [
+        "medium.com",
+        "nytimes.com",
+        "wsj.com",
+        "bloomberg.com",
+        "ft.com"
+      ]
+    },
+    {
+      "id": "cdn_hosting",
+      "order": 5,
+      "enabled": false,
+      "emoji": "📦",
+      "label": {
+        "en": "CDN / Hosting",
+        "es": "CDN / Hosting",
+        "pt": "CDN / Hospedagem"
+      },
+      "domains": [
+        "cloudflare.com",
+        "akamaihd.net",
+        "amazonaws.com",
+        "cdnjs.cloudflare.com",
+        "jsdelivr.net"
+      ]
+    }
+  ]
 }

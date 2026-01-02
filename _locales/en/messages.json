@@ -154,13 +154,5 @@
   "backup_error": {
     "message": "Could not restore backup",
     "description": "Notify when restoring backup failed"
-  },
-  "backup_restored": {
-    "message": "Backup restored",
-    "description": "Notify when backup restored"
-  },
-  "backup_error": {
-    "message": "Could not restore backup",
-    "description": "Notify when restoring backup failed"
   }
 }
