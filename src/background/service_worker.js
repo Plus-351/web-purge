@@ -28,7 +28,7 @@ try {
     chrome.storage && chrome.storage.local && chrome.storage.local.set && chrome.storage.local.set({ serviceWorkerLoaded: Date.now() });
 } catch (e) { /* ignore */ }
 
-chrome.runtime.onInstalled.addListener(async () => {
+chrome.runtime.onInstalled.addListener(async (details) => {
     // installation event
     // Optionally perform initial run or setup here
     try {
@@ -36,9 +36,11 @@ chrome.runtime.onInstalled.addListener(async () => {
         if (cfg.behavior && cfg.behavior.autoCleanOnStartup) {
             await self.cleanAllEnabledTargets(cfg);
         } else {
-            // If auto-clean is disabled, open the options page so the user can review configuration
+            // Only open the options page on a fresh install (not on updates)
             try {
-                if (chrome.runtime.openOptionsPage) chrome.runtime.openOptionsPage();
+                if (details && details.reason === 'install') {
+                    if (chrome.runtime.openOptionsPage) chrome.runtime.openOptionsPage();
+                }
             } catch (e) {
                 console.warn('Could not open options page on install:', e);
             }
@@ -111,11 +113,61 @@ async function applyDefaultsObject(defaultsObj) {
             (c.domains || []).forEach(d => existing.add(normalizeDomainName(d)));
         });
 
+        // ensure custom category exists
+        cfg.categories = cfg.categories || [];
+        let customCat = cfg.categories.find(c => c.id === 'custom_domains');
+        if (!customCat) {
+            customCat = { id: 'custom_domains', enabled: false, emoji: '🛠️', label: {}, domains: [], order: 9999 };
+            cfg.categories.push(customCat);
+        }
+
+        // build remote map for quick lookup
+        const remoteMap = new Map();
+        (defaultsObj.categories || []).forEach(rc => {
+            const set = new Set();
+            (rc.domains || []).forEach(rd => {
+                const domain = (typeof rd === 'string') ? rd : (rd.domain || '');
+                const nd = normalizeDomainName(domain);
+                if (nd) set.add(nd);
+            });
+            remoteMap.set(rc.id, { rc: rc, domains: set });
+        });
+
         let changed = false;
 
+        // removals: if a domain exists in user cfg but not in remote, drop it if disabled, or move to custom if enabled
+        (cfg.categories || []).forEach(uc => {
+            const rid = uc.id;
+            const remoteEntry = remoteMap.get(rid);
+            if (!remoteEntry) return; // skip categories not present remotely
+            const remoteSet = remoteEntry.domains;
+            const kept = [];
+            (uc.domains || []).forEach(dEnt => {
+                const domain = (typeof dEnt === 'string') ? dEnt : (dEnt.domain || '');
+                const nd = normalizeDomainName(domain);
+                if (!nd) return;
+                if (remoteSet.has(nd)) {
+                    kept.push(dEnt);
+                } else {
+                    if (dEnt.enabled) {
+                        // move enabled to custom (avoid duplicates)
+                        const existsInCustom = (customCat.domains || []).some(cd => normalizeDomainName(cd.domain || cd) === nd);
+                        if (!existsInCustom) {
+                            customCat.domains = customCat.domains || [];
+                            customCat.domains.push({ domain: domain, enabled: true });
+                        }
+                    }
+                    changed = true;
+                }
+            });
+            uc.domains = kept;
+        });
+
+        // additions: add remote domains not present anywhere, using category default enabled state
         defaultsObj.categories.forEach(rc => {
             const rid = rc.id;
             let uc = (cfg.categories || []).find(c => c.id === rid);
+            const catDefaultEnabled = rc.enabled !== undefined ? !!rc.enabled : true;
             if (!uc) {
                 const newDomains = [];
                 (rc.domains || []).forEach(rd => {
@@ -124,11 +176,10 @@ async function applyDefaultsObject(defaultsObj) {
                     if (!nd) return;
                     if (existing.has(nd)) return;
                     existing.add(nd);
-                    newDomains.push({ domain: domain, enabled: !!(typeof rd === 'object' ? (rd.enabled !== undefined ? rd.enabled : true) : true) });
+                    newDomains.push({ domain: domain, enabled: catDefaultEnabled });
                 });
                 if (newDomains.length > 0) {
-                    cfg.categories = cfg.categories || [];
-                    cfg.categories.push({ id: rc.id, enabled: rc.enabled !== undefined ? !!rc.enabled : true, emoji: rc.emoji || rc.icon || '', label: rc.label || {}, domains: newDomains });
+                    cfg.categories.push({ id: rc.id, enabled: rc.enabled !== undefined ? !!rc.enabled : true, emoji: rc.emoji || rc.icon || '', label: rc.label || {}, domains: newDomains, order: (rc.order !== undefined ? rc.order : 0) });
                     changed = true;
                 }
             } else {
@@ -138,7 +189,10 @@ async function applyDefaultsObject(defaultsObj) {
                     if (!nd) return;
                     if (existing.has(nd)) return;
                     uc.domains = uc.domains || [];
-                    uc.domains.push({ domain: domain, enabled: !!(typeof rd === 'object' ? (rd.enabled !== undefined ? rd.enabled : true) : true) });
+                    uc.domains.push({ domain: domain, enabled: catDefaultEnabled });
+                    if (rc.order !== undefined && (typeof uc.order === 'undefined' || uc.order === null)) {
+                        uc.order = rc.order;
+                    }
                     existing.add(nd);
                     changed = true;
                 });
@@ -275,18 +329,11 @@ chrome.runtime.onStartup.addListener(async () => {
 });
 
 chrome.runtime.onStartup.addListener(async () => {
-    // startup event
+    // startup event - perform automatic clean only if configured; do NOT open the options page on every startup.
     try {
         const cfg = await self.loadConfig();
         if (cfg.behavior && cfg.behavior.autoCleanOnStartup) {
             await self.cleanAllEnabledTargets(cfg);
-        } else {
-            // show options on startup so user can enable auto-clean if desired
-            try {
-                if (chrome.runtime.openOptionsPage) chrome.runtime.openOptionsPage();
-            } catch (e) {
-                console.warn('Could not open options page on startup:', e);
-            }
         }
     } catch (e) {
         console.error('Startup task failed:', e);

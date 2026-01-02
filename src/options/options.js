@@ -126,7 +126,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 await new Promise(resolve => chrome.storage.local.set(bk, resolve));
             } catch (e) { /* ignore */ }
 
-            // build global existing set
+            // Build maps for remote categories and a global existing set
             const existing = new Set();
             (userCfg.categories || []).forEach(c => {
                 (c.domains || []).forEach(d => {
@@ -135,13 +135,66 @@ document.addEventListener('DOMContentLoaded', function () {
                 });
             });
 
+            // ensure custom category exists
+            userCfg.categories = userCfg.categories || [];
+            let customCat = userCfg.categories.find(c => c.id === 'custom_domains');
+            if (!customCat) {
+                // keep a minimal English fallback label; the canonical translation for
+                // the custom category is provided via `_locales` (category_custom_domains).
+                customCat = { id: 'custom_domains', enabled: false, emoji: '🛠️', label: { en: 'Custom' }, domains: [], order: 9999 };
+                userCfg.categories.push(customCat);
+            }
+
+            // create a quick lookup of remote categories
+            const remoteMap = new Map();
+            (remote.categories || []).forEach(rc => {
+                const set = new Set();
+                (rc.domains || []).forEach(rd => {
+                    const domain = (typeof rd === 'string') ? rd : (rd.domain || '');
+                    const nd = normalizeDomainName(domain);
+                    if (nd) set.add(nd);
+                });
+                remoteMap.set(rc.id, { rc: rc, domains: set });
+            });
+
             let changes = false;
 
+            // Process removals and moves: for each existing user category that also exists remotely
+            (userCfg.categories || []).forEach(uc => {
+                const rid = uc.id;
+                const remoteEntry = remoteMap.get(rid);
+                if (!remoteEntry) return; // skip categories not in remote (we don't remove whole categories)
+                const remoteSet = remoteEntry.domains;
+                const kept = [];
+                (uc.domains || []).forEach(dEnt => {
+                    const domain = (typeof dEnt === 'string') ? dEnt : (dEnt.domain || '');
+                    const nd = normalizeDomainName(domain);
+                    if (!nd) return; // skip malformed
+                    if (remoteSet.has(nd)) {
+                        // domain still present remotely -> keep as-is
+                        kept.push(dEnt);
+                    } else {
+                        // domain removed from remote
+                        if (dEnt.enabled) {
+                            // user had it enabled -> move to custom (enabled)
+                            const already = customCat.domains.find(cd => normalizeDomainName(cd) === nd || normalizeDomainName(cd.domain) === nd);
+                            if (!already) {
+                                customCat.domains.push({ domain: domain, enabled: true });
+                            }
+                        }
+                        // if it was disabled, we drop it (do not keep)
+                        changes = true;
+                    }
+                });
+                uc.domains = kept;
+            });
+
+            // Process additions: for each remote category, add domains not present anywhere
             remote.categories.forEach(rc => {
                 const rid = rc.id;
                 let uc = (userCfg.categories || []).find(c => c.id === rid);
+                const catDefaultEnabled = rc.enabled !== undefined ? !!rc.enabled : true;
                 if (!uc) {
-                    // new category: add domains that don't exist anywhere
                     const newDomains = [];
                     (rc.domains || []).forEach(rd => {
                         const domain = (typeof rd === 'string') ? rd : (rd.domain || '');
@@ -149,22 +202,24 @@ document.addEventListener('DOMContentLoaded', function () {
                         if (!nd) return;
                         if (existing.has(nd)) return;
                         existing.add(nd);
-                        newDomains.push({ domain: domain, enabled: !!(typeof rd === 'object' ? (rd.enabled !== undefined ? rd.enabled : true) : true) });
+                        newDomains.push({ domain: domain, enabled: catDefaultEnabled });
                     });
                     if (newDomains.length > 0) {
-                        userCfg.categories = userCfg.categories || [];
-                        userCfg.categories.push({ id: rc.id, enabled: rc.enabled !== undefined ? !!rc.enabled : true, emoji: rc.emoji || rc.icon || '', label: rc.label || {}, domains: newDomains });
+                        userCfg.categories.push({ id: rc.id, enabled: rc.enabled !== undefined ? !!rc.enabled : true, emoji: rc.emoji || rc.icon || '', label: rc.label || {}, domains: newDomains, order: (rc.order !== undefined ? rc.order : 0) });
                         changes = true;
                     }
                 } else {
-                    // existing category: add domains that don't exist anywhere
                     (rc.domains || []).forEach(rd => {
                         const domain = (typeof rd === 'string') ? rd : (rd.domain || '');
                         const nd = normalizeDomainName(domain);
                         if (!nd) return;
                         if (existing.has(nd)) return;
                         uc.domains = uc.domains || [];
-                        uc.domains.push({ domain: domain, enabled: !!(typeof rd === 'object' ? (rd.enabled !== undefined ? rd.enabled : true) : true) });
+                        uc.domains.push({ domain: domain, enabled: catDefaultEnabled });
+                        // if remote provides an order and user category lacks one, set it
+                        if (rc.order !== undefined && (typeof uc.order === 'undefined' || uc.order === null)) {
+                            uc.order = rc.order;
+                        }
                         existing.add(nd);
                         changes = true;
                     });
@@ -257,20 +312,16 @@ document.addEventListener('DOMContentLoaded', function () {
         try { return chrome.i18n.getMessage(key) || key; } catch (e) { return key; }
     }
 
-    // Prefer the user's browser language (navigator) first, then chrome.i18n if available
+    // Prefer the extension UI language when available, otherwise fall back to navigator
     let lang = 'en';
     try {
-        const nav = (navigator.language || navigator.userLanguage || 'en');
-        if (nav) lang = nav.split('-')[0];
-        try {
-            const ui = chrome.i18n && chrome.i18n.getUILanguage && chrome.i18n.getUILanguage();
-            if (ui && ui.split('-')[0]) {
-                // only override if navigator is not set to a non-default (prefer navigator)
-                // keep navigator preference unless it is 'en' and chrome provides a better match
-                const uiShort = ui.split('-')[0];
-                if (lang === 'en' && uiShort !== 'en') lang = uiShort;
-            }
-        } catch (e) { /* ignore */ }
+        if (chrome && chrome.i18n && typeof chrome.i18n.getUILanguage === 'function') {
+            const ui = chrome.i18n.getUILanguage();
+            if (ui) lang = ui.split('-')[0];
+        } else {
+            const nav = (navigator.language || navigator.userLanguage || 'en');
+            lang = nav.split('-')[0];
+        }
     } catch (e) {
         lang = 'en';
     }
@@ -303,7 +354,24 @@ document.addEventListener('DOMContentLoaded', function () {
 
             const titleSpan = document.createElement('span');
             titleSpan.className = 'category-title';
-            titleSpan.textContent = (category.label && (category.label[lang] || category.label.en)) || category.id;
+            // Prefer explicit i18n messages when available (we only add `category_custom_domains` in _locales),
+            // otherwise fall back to the per-category label from the defaults JSON.
+            try {
+                let titleText = category.id;
+                if (chrome && chrome.i18n && typeof chrome.i18n.getMessage === 'function') {
+                    const msg = chrome.i18n.getMessage('category_' + category.id) || '';
+                    if (msg) {
+                        titleText = msg;
+                    } else if (category.label) {
+                        titleText = category.label[lang] || category.label.en || category.id;
+                    }
+                } else {
+                    titleText = (category.label && (category.label[lang] || category.label.en)) || category.id;
+                }
+                titleSpan.textContent = titleText;
+            } catch (e) {
+                titleSpan.textContent = (category.label && (category.label[lang] || category.label.en)) || category.id;
+            }
 
             // assemble header: arrow, checkbox, emoji, title
             header.appendChild(arrow);
@@ -380,8 +448,10 @@ document.addEventListener('DOMContentLoaded', function () {
         chrome.storage.sync.get('webPurgeConfig', function (data) {
             let cfg = data.webPurgeConfig;
             if (!cfg) {
+                // Do not persist the in-memory default here. The options page will
+                // display `defaultConfig` when no stored config exists, but writing
+                // it immediately can create stale/fallback configs (schema version 1).
                 cfg = defaultConfig;
-                chrome.storage.sync.set({ webPurgeConfig: cfg });
             }
             autoCleanToggle.checked = !!(cfg.behavior && cfg.behavior.autoCleanOnStartup);
             historyLookbackInput.value = (cfg.behavior && cfg.behavior.historyLookbackDays) || 7;
@@ -390,7 +460,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 // Set title with gear emoji, remove duplicate subtitle
                 const name = chrome.i18n.getMessage('extension_name') || 'Web Purge';
                 const titleEl = document.getElementById('app-title');
-                if (titleEl) titleEl.textContent = '⚙️ ' + name;
+                // show plain extension name beside the logo; the gear belongs in the
+                // options/title area instead (see categories-title below)
+                if (titleEl) titleEl.textContent = name;
                 try { document.title = chrome.i18n.getMessage('options_title') || name; } catch (e) { }
                 // clear subtitle (we no longer show duplicate name)
                 try { const subtitleEl = document.getElementById('app-subtitle'); if (subtitleEl) subtitleEl.textContent = ''; } catch (e) { }
@@ -445,7 +517,36 @@ document.addEventListener('DOMContentLoaded', function () {
                     if (dataVersionLabel) dataVersionLabel.textContent = (DEFAULTS_VERSION || '');
                 }
             } catch (e) { }
+            // Set categories/options title with gear emoji
+            try {
+                const catTitleEl = document.getElementById('categories-title');
+                if (catTitleEl) catTitleEl.textContent = ('⚙️ ' + (chrome.i18n.getMessage('options_title') || 'Categories'));
+            } catch (e) { }
+
             renderCategories(cfg);
+
+            // Developer i18n key check: enable by setting localStorage.wp_dev_i18n_check = '1'
+            (function i18nDevCheck() {
+                try {
+                    if (localStorage && localStorage.getItem && localStorage.getItem('wp_dev_i18n_check') === '1') {
+                        const keys = [
+                            'options_title', 'behavior_title', 'actions_title', 'add_domain', 'save_label', 'export_config', 'import_config', 'reset_defaults',
+                            'force_defaults', 'revert_backup', 'example_placeholder', 'delete_domain', 'invalid_file', 'session_warning', 'auto_clean_label',
+                            'history_label', 'history_note', 'data_version_label', 'defaults_applied', 'defaults_applied_remote', 'defaults_no_change',
+                            'defaults_error', 'no_backups', 'backup_missing', 'backup_restored', 'backup_error', 'category_custom_domains'
+                        ];
+                        const missing = [];
+                        if (chrome && chrome.i18n && typeof chrome.i18n.getMessage === 'function') {
+                            keys.forEach(k => {
+                                const msg = chrome.i18n.getMessage(k) || '';
+                                if (!msg) missing.push(k);
+                            });
+                        }
+                        if (missing.length) console.warn('Missing i18n keys (wp_dev_i18n_check):', missing);
+                        else console.info('i18n dev check: all keys present');
+                    }
+                } catch (e) { /* ignore */ }
+            })();
             // after render, first apply local defaults (from bundled options.json) if its version changed,
             // then fetch remote defaults and apply if any. Both use the same merge helper.
             const localDefaults = { defaultsVersion: (defaultConfig && defaultConfig.version) ? defaultConfig.version : DEFAULTS_VERSION, categories: defaultConfig.categories };
@@ -457,25 +558,15 @@ document.addEventListener('DOMContentLoaded', function () {
                     const reviewBtn = document.getElementById('defaults-banner-review');
                     if (banner && bannerText) {
                         bannerText.textContent = `Defaults have been updated to ${localRes.version}.`;
-                        if (reviewBtn) reviewBtn.style.display = 'inline-block';
+                        if (reviewBtn) {
+                            reviewBtn.style.display = 'inline-block';
+                            reviewBtn.textContent = 'Dismiss';
+                        }
                         banner.style.display = 'block';
                         if (reviewBtn) {
                             reviewBtn.onclick = () => {
-                                loadConfig();
+                                // dismiss only
                                 banner.style.display = 'none';
-                                try {
-                                    const container = document.getElementById('categories-container');
-                                    if (container) {
-                                        container.scrollIntoView({ behavior: 'smooth' });
-                                        const first = container.querySelector('section.category');
-                                        if (first) {
-                                            first.style.transition = 'background-color 0.3s';
-                                            const prev = first.style.backgroundColor;
-                                            first.style.backgroundColor = '#fff7e6';
-                                            setTimeout(() => { first.style.backgroundColor = prev || ''; }, 2000);
-                                        }
-                                    }
-                                } catch (e) { }
                             };
                         }
                     }
@@ -489,26 +580,13 @@ document.addEventListener('DOMContentLoaded', function () {
                         const reviewBtn = document.getElementById('defaults-banner-review');
                         if (banner && bannerText) {
                             bannerText.textContent = `Defaults have been updated to ${res.version}.`;
-                            if (reviewBtn) reviewBtn.style.display = 'inline-block';
+                            if (reviewBtn) {
+                                reviewBtn.style.display = 'inline-block';
+                                reviewBtn.textContent = 'Dismiss';
+                            }
                             banner.style.display = 'block';
                             if (reviewBtn) {
-                                reviewBtn.onclick = () => {
-                                    loadConfig();
-                                    banner.style.display = 'none';
-                                    try {
-                                        const container = document.getElementById('categories-container');
-                                        if (container) {
-                                            container.scrollIntoView({ behavior: 'smooth' });
-                                            const first = container.querySelector('section.category');
-                                            if (first) {
-                                                first.style.transition = 'background-color 0.3s';
-                                                const prev = first.style.backgroundColor;
-                                                first.style.backgroundColor = '#fff7e6';
-                                                setTimeout(() => { first.style.backgroundColor = prev || ''; }, 2000);
-                                            }
-                                        }
-                                    } catch (e) { }
-                                };
+                                reviewBtn.onclick = () => { banner.style.display = 'none'; };
                             }
                         }
                     }
@@ -648,11 +726,16 @@ document.addEventListener('DOMContentLoaded', function () {
         reader.readAsText(file);
     });
 
-    resetButton.addEventListener('click', function () {
-        chrome.storage.sync.set({ webPurgeConfig: defaultConfig }, function () {
+    resetButton.addEventListener('click', async function () {
+        try {
+            const localDefaults = { defaultsVersion: (defaultConfig && defaultConfig.version) ? defaultConfig.version : DEFAULTS_VERSION, categories: (defaultConfig && defaultConfig.categories) ? defaultConfig.categories : [] };
+            await mergeDefaultsAndSave(localDefaults);
             showToast(t('reset_defaults') || 'Defaults restored', 3000, 'success');
             loadConfig();
-        });
+        } catch (e) {
+            showToast(t('reset_defaults') || 'Defaults restored', 3000, 'success');
+            loadConfig();
+        }
     });
 
     // showToast provided by shared script (src/shared/toast.js)

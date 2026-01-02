@@ -52,7 +52,14 @@ function storageLocalRemove(keys) {
 
 self.loadConfig = async () => {
     const result = await storageSyncGet(CONFIG_KEY);
-    let cfg = result[CONFIG_KEY] || initializeDefaultConfig();
+    // If there's no stored config, return an in-memory initialized default
+    // but do NOT persist it automatically. Persisting a generated default
+    // on first load caused stale/fallback configs (version: 1) to be written
+    // into `chrome.storage.sync` unexpectedly.
+    if (!result[CONFIG_KEY]) {
+        return initializeDefaultConfig();
+    }
+    let cfg = result[CONFIG_KEY];
 
     // Basic normalization and validation to ensure new format:
     // - behavior.historyLookbackDays exists
@@ -69,6 +76,7 @@ self.loadConfig = async () => {
     cfg.categories = cfg.categories.map(category => {
         const c = Object.assign({}, category);
         c.enabled = !!c.enabled;
+        c.order = (typeof category.order !== 'undefined') ? Number(category.order) : 0;
         c.label = c.label || { en: c.id || '', es: c.id || '' };
         c.description = c.description || { en: '', es: '' };
 
@@ -132,87 +140,18 @@ self.saveConfig = async (config) => {
 };
 
 const initializeDefaultConfig = () => {
+    // Return a minimal default configuration skeleton.
+    // Domain/category data must come from the bundled `src/options/options.json`
+    // or from remote defaults; do not hardcode categories/domains here.
     return {
         version: 1,
         behavior: {
-            // default: do NOT auto-clean on startup to avoid unexpected deletes
             autoCleanOnStartup: false,
             historyLookbackDays: 7
         },
         ui: {
             showSensitiveCategory: true
         },
-        categories: [
-            {
-                id: "trackers_ads",
-                enabled: true,
-                label: {
-                    en: "Trackers / Ads",
-                    es: "Trackers / Publicidad"
-                },
-                description: {
-                    en: "Common ad and analytics domains.",
-                    es: "Dominios comunes de anuncios y analítica."
-                },
-                domains: [
-                    { domain: "doubleclick.net", enabled: true },
-                    { domain: "googlesyndication.com", enabled: true },
-                    { domain: "google-analytics.com", enabled: true },
-                    { domain: "googletagmanager.com", enabled: true },
-                    { domain: "googletagservices.com", enabled: true },
-                    { domain: "adsystem.com", enabled: true },
-                    { domain: "adnxs.com", enabled: true },
-                    { domain: "criteo.com", enabled: true },
-                    { domain: "scorecardresearch.com", enabled: true },
-                    { domain: "taboola.com", enabled: true },
-                    { domain: "outbrain.com", enabled: true }
-                ]
-            },
-            {
-                id: "social_networks",
-                enabled: true,
-                label: {
-                    en: "Social Networks",
-                    es: "Redes Sociales"
-                },
-                description: {
-                    en: "Major social platforms.",
-                    es: "Plataformas sociales principales."
-                },
-                domains: [
-                    { domain: "facebook.com", enabled: true },
-                    { domain: "fb.com", enabled: true },
-                    { domain: "messenger.com", enabled: true },
-                    { domain: "instagram.com", enabled: true },
-                    { domain: "threads.net", enabled: true },
-                    { domain: "tiktok.com", enabled: true },
-                    { domain: "x.com", enabled: true },
-                    { domain: "twitter.com", enabled: true },
-                    { domain: "linkedin.com", enabled: true },
-                    { domain: "reddit.com", enabled: true },
-                    { domain: "pinterest.com", enabled: true }
-                ]
-            },
-            {
-                id: "sensitive_sites",
-                enabled: false,
-                label: {
-                    en: "Sensitive Sites",
-                    es: "Sitios Sensibles"
-                },
-                description: {
-                    en: "Privacy cleanup for sensitive websites.",
-                    es: "Limpieza de privacidad para sitios sensibles."
-                },
-                domains: [
-                    { domain: "pornhub.com", enabled: false },
-                    { domain: "xvideos.com", enabled: false },
-                    { domain: "xnxx.com", enabled: false },
-                    { domain: "redtube.com", enabled: false },
-                    { domain: "youporn.com", enabled: false },
-                    { domain: "onlyfans.com", enabled: false }
-                ]
-            }
-        ]
+        categories: []
     };
 };

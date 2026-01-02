@@ -52,7 +52,7 @@
     "description": "Label for resetting the configuration to defaults."
   },
   "options_title": {
-    "message": "⚙️ Options",
+    "message": "Options",
     "description": "Options page title"
   },
   "behavior_title": {
@@ -154,5 +154,9 @@
   "backup_error": {
     "message": "Could not restore backup",
     "description": "Notify when restoring backup failed"
+  },
+  "category_custom_domains": {
+    "message": "Custom Domains",
+    "description": "Label for the custom domains category"
   }
 }

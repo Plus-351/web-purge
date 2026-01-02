@@ -32,7 +32,7 @@
     "description": "Texto que muestra el último error, si lo hay"
   },
   "options_title": {
-    "message": "⚙️ Opciones de Web Purge",
+    "message": "Opciones",
     "description": "Título de la página de opciones"
   },
   "category_enable": {
@@ -154,5 +154,9 @@
   "backup_error": {
     "message": "No se pudo restaurar la copia",
     "description": "Notificar cuando falla restaurar backup"
+  },
+  "category_custom_domains": {
+    "message": "Dominios personalizados",
+    "description": "Etiqueta para la categoría de dominios personalizados"
   }
 }

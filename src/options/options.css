@@ -13,6 +13,13 @@ h1 {
     margin-bottom: 20px;
 }
 
+/* Make h2 titles consistent across the options page */
+h2 {
+    font-size: 18px;
+    font-weight: 700;
+    margin: 0 0 10px 0;
+}
+
 .category {
     margin-bottom: 15px;
     padding: 10px;

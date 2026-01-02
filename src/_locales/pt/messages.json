@@ -1,162 +1,162 @@
 {
     "extension_name": {
         "message": "Web Purge",
-        "description": "Nome da extensão"
+        "description": "The name of the extension."
     },
-    "options_title": {
-        "message": "⚙️ Opções do Web Purge",
-        "description": "Título da página de opções"
+    "popup_title": {
+        "message": "Web Purge - Clean Your Browsing Data",
+        "description": "Title of the popup UI."
     },
     "panic_button": {
         "message": "Pânico: Eliminar Todo",
-        "description": "Rótulo do botão principal no popup"
+        "description": "Label for the primary button in the popup."
     },
     "clean_current_domain": {
         "message": "Limpar este domínio",
-        "description": "Rótulo do botão secundário no popup"
-    },
-    "export_config": {
-        "message": "Exportar configuração",
-        "description": "Rótulo para exportar a configuração"
-    },
-    "import_config": {
-        "message": "Importar configuração",
-        "description": "Rótulo para importar a configuração"
-    },
-    "reset_defaults": {
-        "message": "Reiniciar para padrões",
-        "description": "Rótulo para reiniciar para padrões"
-    },
-    "add_domain": {
-        "message": "Adicionar domínio",
-        "description": "Texto do botão para añadir dominio personalizado"
-    },
-    "save_ok": {
-        "message": "Configuração salva",
-        "description": "Mensagem de sucesso ao guardar"
-    },
-    "save_label": {
-        "message": "Salvar alterações",
-        "description": "Rótulo do botão salvar"
-    },
-    "session_warning": {
-        "message": "Remover dados de alguns domínios pode desconectá-lo de serviços.",
-        "description": "Aviso de sessão mostrado nas opções"
-    },
-    "auto_clean_label": {
-        "message": "Ativar limpeza automática ao iniciar o navegador",
-        "description": "Rótulo para o toggle de limpeza automática"
-    },
-    "history_label": {
-        "message": "Intervalo de histórico a escanear (dias):",
-        "description": "Rótulo para o intervalo de historial"
-    },
-    "history_note": {
-        "message": "0 = todo o histórico. Selecionar mais de 7 dias pode ser mais lento.",
-        "description": "Nota sobre o intervalo de histórico"
-    },
-    "example_placeholder": {
-        "message": "example.com",
-        "description": "Placeholder para o input de domínio"
-    },
-    "delete_domain": {
-        "message": "Eliminar domínio",
-        "description": "Título do ícone excluir domínio"
-    },
-    "invalid_file": {
-        "message": "Arquivo inválido",
-        "description": "Mensagem de erro ao importar"
-    },
-    "options_subtitle": {
-        "message": "Web Purge",
-        "description": "Subtítulo mostrado na página de opções"
-    },
-    "behavior_title": {
-        "message": "Comportamento",
-        "description": "Título da seção de comportamento"
-    },
-    "actions_title": {
-        "message": "Ações Globais",
-        "description": "Título da seção de ações"
-    },
-    "category_trackers_ads": {
-        "message": "Rastreadores / Anúncios",
-        "description": "Etiqueta de categoría"
-    },
-    "category_social_networks": {
-        "message": "Redes Sociais",
-        "description": "Etiqueta de categoría"
-    },
-    "category_sensitive_sites": {
-        "message": "Sites Sensíveis",
-        "description": "Etiqueta de categoría"
-    },
-    "category_custom_domains": {
-        "message": "Domínios personalizados",
-        "description": "Etiqueta de categoría"
-    },
-    "category_icon": {
-        "message": "🏷️",
-        "description": "Etiqueta de categoría"
+        "description": "Label for the secondary button in the popup."
     },
     "last_run": {
         "message": "Última execução: {timestamp}",
-        "description": "Mostra a última execução"
+        "description": "Displays the last run timestamp."
     },
     "deleted_urls_count": {
         "message": "URLs eliminadas: {count}",
-        "description": "Mostra a quantidade de URLs eliminadas"
+        "description": "Displays the count of deleted history URLs."
     },
     "purged_origins_count": {
         "message": "Origens purgadas: {count}",
-        "description": "Mostra a quantidade de origens purgadas"
+        "description": "Displays the count of purged origins."
     },
     "last_error": {
         "message": "Último erro: {error}",
-        "description": "Mostra a última mensagem de erro"
+        "description": "Displays the last error message if any."
+    },
+    "category_enable": {
+        "message": "Enable",
+        "description": "Label for enabling a category."
+    },
+    "category_disable": {
+        "message": "Disable",
+        "description": "Label for disabling a category."
+    },
+    "export_config": {
+        "message": "Exportar configuração",
+        "description": "Label for exporting the configuration."
+    },
+    "import_config": {
+        "message": "Importar configuração",
+        "description": "Label for importing the configuration."
+    },
+    "reset_defaults": {
+        "message": "Reiniciar para padrões",
+        "description": "Label for resetting the configuration to defaults."
+    },
+    "options_title": {
+        "message": "Opções",
+        "description": "Options page title"
+    },
+    "behavior_title": {
+        "message": "Comportamento",
+        "description": "Behavior section title"
+    },
+    "actions_title": {
+        "message": "Ações Globais",
+        "description": "Actions section title"
+    },
+    "add_domain": {
+        "message": "Adicionar domínio",
+        "description": "Add custom domain button text"
+    },
+    "save_ok": {
+        "message": "Configuração salva",
+        "description": "Save confirmation"
+    },
+    "save_label": {
+        "message": "Salvar alterações",
+        "description": "Save button label"
+    },
+    "session_warning": {
+        "message": "Remover dados de alguns domínios pode desconectá-lo de serviços.",
+        "description": "Session warning text shown in options"
+    },
+    "auto_clean_label": {
+        "message": "Ativar limpeza automática ao iniciar o navegador",
+        "description": "Label for auto clean toggle"
+    },
+    "history_label": {
+        "message": "Intervalo de histórico a escanear (dias):",
+        "description": "Label for history lookback"
+    },
+    "history_note": {
+        "message": "0 = full history. Selecting more than 7 days can be slower.",
+        "description": "Note about history scan range"
+    },
+    "example_placeholder": {
+        "message": "example.com",
+        "description": "Placeholder for custom domain input"
+    },
+    "delete_domain": {
+        "message": "Eliminar domínio",
+        "description": "Title for delete domain icon"
+    },
+    "options_subtitle": {
+        "message": "Web Purge",
+        "description": "Subtitle shown in the options page"
+    },
+    "invalid_file": {
+        "message": "Arquivo inválido",
+        "description": "Import error message"
+    },
+    "warning_sensitive": {
+        "message": "Advertência: Esta categoria contém sites sensíveis.",
+        "description": "Warning message for sensitive categories."
     },
     "force_defaults": {
         "message": "Forçar padrões",
-        "description": "Botão para forçar a aplicação dos padrões"
+        "description": "Button to force apply defaults"
     },
     "revert_backup": {
         "message": "Reverter backup",
-        "description": "Botão para restaurar o último backup"
+        "description": "Button to revert to last backup"
     },
     "data_version_label": {
         "message": "Versão de dados:",
-        "description": "Rótulo para a versão dos dados aplicados"
+        "description": "Label for applied data/defaults version"
     },
     "defaults_applied": {
         "message": "Padrões aplicados",
-        "description": "Notificação quando os padrões locais são aplicados"
+        "description": "Notification when local defaults applied"
     },
     "defaults_applied_remote": {
         "message": "Padrões remotos aplicados: {version}",
-        "description": "Notificação quando os padrões remotos são aplicados"
+        "description": "Notification when remote defaults applied"
     },
     "defaults_no_change": {
         "message": "Nenhuma alteração nos padrões",
-        "description": "Notificação quando não há mudanças nos padrões"
+        "description": "Notification when no defaults changed"
     },
     "defaults_error": {
         "message": "Falha na verificação dos padrões",
-        "description": "Notificação de erro na verificação de padrões"
+        "description": "Notification on defaults check error"
     },
     "no_backups": {
         "message": "Nenhum backup disponível",
-        "description": "Notificar quando não há backups"
+        "description": "Notify when no backups exist"
     },
     "backup_missing": {
         "message": "Backup não encontrado",
-        "description": "Notificar quando o backup está ausente"
+        "description": "Notify when backup key missing"
     },
     "backup_restored": {
         "message": "Backup restaurado",
-        "description": "Notificar quando o backup é restaurado"
+        "description": "Notify when backup restored"
     },
     "backup_error": {
         "message": "Não foi possível restaurar o backup",
-        "description": "Notificar quando falha a restauração do backup"
+        "description": "Notify when restoring backup failed"
+    },
+    "category_custom_domains": {
+        "message": "Domínios personalizados",
+        "description": "Label for the custom domains category"
     }
 }
