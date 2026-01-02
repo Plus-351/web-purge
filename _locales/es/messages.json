@@ -8,7 +8,7 @@
     "description": "Título del popup de la extensión"
   },
   "panic_button": {
-    "message": "PÁNICO: Limpiar todos los objetivos habilitados",
+    "message": "PÁNICO: Limpiar todo",
     "description": "Texto del botón principal en el popup"
   },
   "clean_current_domain": {
@@ -32,7 +32,7 @@
     "description": "Texto que muestra el último error, si lo hay"
   },
   "options_title": {
-    "message": "Opciones de Web Purge",
+    "message": "⚙️ Opciones de Web Purge",
     "description": "Título de la página de opciones"
   },
   "category_enable": {
@@ -100,7 +100,7 @@
     "description": "Título del icono eliminar dominio"
   },
   "options_subtitle": {
-    "message": "⚙️ Web Purge",
+    "message": "Web Purge",
     "description": "Subtítulo mostrado en la página de opciones"
   },
   "invalid_file": {
@@ -110,5 +110,57 @@
   "sensitive_category_warning": {
     "message": "Advertencia: Esta categoría contiene sitios sensibles.",
     "description": "Texto de advertencia para categorías sensibles"
+  },
+  "force_defaults": {
+    "message": "Forzar valores predeterminados",
+    "description": "Botón para forzar la aplicación de valores predeterminados"
+  },
+  "revert_backup": {
+    "message": "Revertir copia",
+    "description": "Botón para restaurar la última copia de seguridad"
+  },
+  "data_version_label": {
+    "message": "Versión de datos:",
+    "description": "Etiqueta para la versión de datos/aplicados"
+  },
+  "defaults_applied": {
+    "message": "Defaults aplicados",
+    "description": "Notificación cuando se aplican defaults locales"
+  },
+  "defaults_applied_remote": {
+    "message": "Defaults remotos aplicados: {version}",
+    "description": "Notificación cuando se aplican defaults remotos"
+  },
+  "defaults_no_change": {
+    "message": "No hay cambios en defaults",
+    "description": "Notificación cuando no hay cambios en defaults"
+  },
+  "defaults_error": {
+    "message": "Fallo en verificación de defaults",
+    "description": "Notificación de error en verificación de defaults"
+  },
+  "no_backups": {
+    "message": "No hay copias de seguridad disponibles",
+    "description": "Notificar cuando no hay backups"
+  },
+  "backup_missing": {
+    "message": "Copia no encontrada",
+    "description": "Notificar cuando falta la copia"
+  },
+  "backup_restored": {
+    "message": "Copia restaurada",
+    "description": "Notificar cuando la copia es restaurada"
+  },
+  "backup_error": {
+    "message": "No se pudo restaurar la copia",
+    "description": "Notificar cuando falla restaurar backup"
+  },
+  "backup_restored": {
+    "message": "Copia restaurada",
+    "description": "Notificar cuando la copia es restaurada"
+  },
+  "backup_error": {
+    "message": "No se pudo restaurar la copia",
+    "description": "Notificar cuando falla restaurar backup"
   }
 }

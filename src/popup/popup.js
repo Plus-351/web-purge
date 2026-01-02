@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('title').textContent = chrome.i18n.getMessage('extension_name') || 'Web Purge';
         try { document.title = chrome.i18n.getMessage('popup_title') || (chrome.i18n.getMessage('extension_name') || 'Web Purge'); } catch (e) { }
         panicButton.innerHTML = '💥 ' + (chrome.i18n.getMessage('panic_button') || 'Panic');
-        cleanDomainButton.innerHTML = '🧹 ' + (chrome.i18n.getMessage('clean_current_domain') || 'Clean this domain');
+        cleanDomainButton.innerHTML = '🗑️ ' + (chrome.i18n.getMessage('clean_current_domain') || 'Clean this domain');
     } catch (e) { }
 
     // Localize status labels, keeping placeholders for spans
@@ -47,9 +47,9 @@ document.addEventListener('DOMContentLoaded', function () {
     // Panic button event listener
     panicButton.addEventListener('click', function () {
         chrome.runtime.sendMessage({ action: 'cleanAllEnabledTargets' }, function (response) {
+            console.log('cleanAllEnabledTargets response', response);
             if (response && response.success) {
                 updateStatusSummary(response.summary || {});
-                // show summary toast
                 const del = (response.summary && response.summary.deletedUrlsCount) ? String(response.summary.deletedUrlsCount) : '0';
                 const purged = (response.summary && response.summary.purgedOriginsCount) ? String(response.summary.purgedOriginsCount) : '0';
                 const deletedLabel = chrome.i18n.getMessage('deleted_urls_count') || 'Deleted URLs: {count}';
@@ -57,10 +57,19 @@ document.addEventListener('DOMContentLoaded', function () {
                 const msg = `${deletedLabel.replace('{count}', '').trim()}: ${del} — ${purgedLabel.replace('{count}', '').trim()}: ${purged}`;
                 showToast(msg, 3000, 'success');
             } else {
-                const lastError = document.getElementById('last-error');
-                const errMsg = (response && response.error) ? response.error : 'unknown';
-                if (lastError) lastError.textContent = 'Error: ' + errMsg;
-                showToast('Error: ' + errMsg, 5000, 'error');
+                // fallback: try reading lastRunSummary from storage
+                chrome.storage.local.get('lastRunSummary', function (data) {
+                    const s = data && data.lastRunSummary ? data.lastRunSummary : null;
+                    if (s) {
+                        updateStatusSummary(s);
+                        showToast('Clean completed (from storage)', 2500, 'success');
+                        return;
+                    }
+                    const lastError = document.getElementById('last-error');
+                    const errMsg = (response && response.error) ? response.error : 'unknown';
+                    if (lastError) lastError.textContent = 'Error: ' + errMsg;
+                    showToast('Error: ' + errMsg, 5000, 'error');
+                });
             }
         });
     });
@@ -71,6 +80,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const activeTab = tabs[0];
             if (activeTab) {
                 chrome.runtime.sendMessage({ action: 'cleanCurrentDomain', url: activeTab.url }, function (response) {
+                    console.log('cleanCurrentDomain response', response);
                     if (response && response.success) {
                         updateStatusSummary(response.summary || {});
                         const del = (response.summary && response.summary.deletedUrlsCount) ? String(response.summary.deletedUrlsCount) : '0';
@@ -80,10 +90,18 @@ document.addEventListener('DOMContentLoaded', function () {
                         const msg = `${deletedLabel.replace('{count}', '').trim()}: ${del} — ${purgedLabel.replace('{count}', '').trim()}: ${purged}`;
                         showToast(msg, 3000, 'success');
                     } else {
-                        const lastError = document.getElementById('last-error');
-                        const errMsg = (response && response.error) ? response.error : 'unknown';
-                        if (lastError) lastError.textContent = 'Error: ' + errMsg;
-                        showToast('Error: ' + errMsg, 5000, 'error');
+                        chrome.storage.local.get('lastRunSummary', function (data) {
+                            const s = data && data.lastRunSummary ? data.lastRunSummary : null;
+                            if (s) {
+                                updateStatusSummary(s);
+                                showToast('Clean completed (from storage)', 2500, 'success');
+                                return;
+                            }
+                            const lastError = document.getElementById('last-error');
+                            const errMsg = (response && response.error) ? response.error : 'unknown';
+                            if (lastError) lastError.textContent = 'Error: ' + errMsg;
+                            showToast('Error: ' + errMsg, 5000, 'error');
+                        });
                     }
                 });
             }

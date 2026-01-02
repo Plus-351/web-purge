@@ -52,7 +52,7 @@
     "description": "Label for resetting the configuration to defaults."
   },
   "options_title": {
-    "message": "Options",
+    "message": "⚙️ Options",
     "description": "Options page title"
   },
   "behavior_title": {
@@ -100,7 +100,7 @@
     "description": "Title for delete domain icon"
   },
   "options_subtitle": {
-    "message": "⚙️ Web Purge",
+    "message": "Web Purge",
     "description": "Subtitle shown in the options page"
   },
   "invalid_file": {
@@ -110,5 +110,57 @@
   "warning_sensitive": {
     "message": "Warning: This category contains sensitive sites.",
     "description": "Warning message for sensitive categories."
+  },
+  "force_defaults": {
+    "message": "Force defaults",
+    "description": "Button to force apply defaults"
+  },
+  "revert_backup": {
+    "message": "Revert backup",
+    "description": "Button to revert to last backup"
+  },
+  "data_version_label": {
+    "message": "Data Version:",
+    "description": "Label for applied data/defaults version"
+  },
+  "defaults_applied": {
+    "message": "Defaults applied",
+    "description": "Notification when local defaults applied"
+  },
+  "defaults_applied_remote": {
+    "message": "Remote defaults applied: {version}",
+    "description": "Notification when remote defaults applied"
+  },
+  "defaults_no_change": {
+    "message": "No defaults changes",
+    "description": "Notification when no defaults changed"
+  },
+  "defaults_error": {
+    "message": "Defaults check failed",
+    "description": "Notification on defaults check error"
+  },
+  "no_backups": {
+    "message": "No backups available",
+    "description": "Notify when no backups exist"
+  },
+  "backup_missing": {
+    "message": "Backup not found",
+    "description": "Notify when backup key missing"
+  },
+  "backup_restored": {
+    "message": "Backup restored",
+    "description": "Notify when backup restored"
+  },
+  "backup_error": {
+    "message": "Could not restore backup",
+    "description": "Notify when restoring backup failed"
+  },
+  "backup_restored": {
+    "message": "Backup restored",
+    "description": "Notify when backup restored"
+  },
+  "backup_error": {
+    "message": "Could not restore backup",
+    "description": "Notify when restoring backup failed"
   }
 }

@@ -178,7 +178,7 @@ document.addEventListener('DOMContentLoaded', function () {
             } else {
                 // update meta anyway to avoid re-checking too often
                 await new Promise(resolve => chrome.storage.local.set({ defaultsMeta: { appliedDefaultsVersion: remote.defaultsVersion, lastDefaultsFetchTime: Date.now() } }, resolve));
-                return { applied: false };
+                return { applied: false, version: remote.defaultsVersion, metaUpdated: true };
             }
         } catch (e) {
             console.warn('mergeDefaultsAndSave failed', e);
@@ -257,116 +257,122 @@ document.addEventListener('DOMContentLoaded', function () {
         try { return chrome.i18n.getMessage(key) || key; } catch (e) { return key; }
     }
 
-    // Prefer the extension UI language from chrome.i18n when available
+    // Prefer the user's browser language (navigator) first, then chrome.i18n if available
     let lang = 'en';
     try {
-        const ui = chrome.i18n.getUILanguage && chrome.i18n.getUILanguage();
-        if (ui) lang = ui.split('-')[0];
-        else lang = (navigator.language || 'en').split('-')[0];
+        const nav = (navigator.language || navigator.userLanguage || 'en');
+        if (nav) lang = nav.split('-')[0];
+        try {
+            const ui = chrome.i18n && chrome.i18n.getUILanguage && chrome.i18n.getUILanguage();
+            if (ui && ui.split('-')[0]) {
+                // only override if navigator is not set to a non-default (prefer navigator)
+                // keep navigator preference unless it is 'en' and chrome provides a better match
+                const uiShort = ui.split('-')[0];
+                if (lang === 'en' && uiShort !== 'en') lang = uiShort;
+            }
+        } catch (e) { /* ignore */ }
     } catch (e) {
-        lang = (navigator.language || 'en').split('-')[0];
+        lang = 'en';
     }
 
     function renderCategories(config) {
         clearCategoriesUI();
-        config.categories.forEach(category => {
+        // sort categories by `order` (default 0) so sensitive/custom can be forced to penultimate/last
+        const cats = (config.categories || []).slice().sort((a, b) => (Number(a.order || 0) - Number(b.order || 0)));
+        cats.forEach(category => {
             const section = document.createElement('section');
             section.className = 'category';
-            const checkbox = document.createElement('input');
-            checkbox.type = 'checkbox';
-            checkbox.checked = !!category.enabled;
-            checkbox.dataset.id = category.id;
-            checkbox.className = 'category-checkbox category-enabled';
 
-            const domainsList = document.createElement('div');
-            domainsList.className = 'domains-list';
-            domainsList.style.display = 'none';
-            (category.domains || []).forEach(d => {
-                const isCustom = category.id === 'custom_domains';
-                domainsList.appendChild(createDomainRow(d, !!category.enabled, isCustom));
-            });
-
-            // When category checkbox toggles, update all child domain checkboxes
-            checkbox.addEventListener('change', () => {
-                const checked = !!checkbox.checked;
-                const domainCheckboxes = domainsList.querySelectorAll('.domain-enabled');
-                domainCheckboxes.forEach(cb => { cb.checked = checked; });
-            });
-
-            // Add button only for custom category
-            let addBtn = null;
-            if (category.id === 'custom_domains') {
-                addBtn = document.createElement('button');
-                addBtn.type = 'button';
-                addBtn.className = 'button';
-                addBtn.innerHTML = '➕ ' + addDomainText;
-                addBtn.addEventListener('click', () => {
-                    // expand if not expanded
-                    if (domainsList.style.display !== 'block') {
-                        domainsList.style.display = 'block';
-                        arrow.textContent = '▼';
-                    }
-                    domainsList.appendChild(createDomainRow('', !!checkbox.checked, true));
-                });
-            }
-
-            // header: arrow + checkbox + icon + title
             const header = document.createElement('div');
             header.className = 'category-header';
 
             const arrow = document.createElement('span');
-            arrow.className = 'arrow';
-            arrow.textContent = '▶';
-            arrow.addEventListener('click', () => {
-                const expanded = domainsList.style.display === 'block';
-                domainsList.style.display = expanded ? 'none' : 'block';
-                arrow.textContent = expanded ? '▶' : '▼';
+            arrow.className = 'category-arrow';
+            // always start collapsed
+            arrow.textContent = '▸';
+
+            const toggle = document.createElement('input');
+            toggle.type = 'checkbox';
+            toggle.checked = !!category.enabled;
+            toggle.className = 'category-enabled';
+            toggle.dataset.id = category.id;
+
+            const emojiSpan = document.createElement('span');
+            emojiSpan.className = 'category-emoji';
+            emojiSpan.textContent = category.emoji || '';
+
+            const titleSpan = document.createElement('span');
+            titleSpan.className = 'category-title';
+            titleSpan.textContent = (category.label && (category.label[lang] || category.label.en)) || category.id;
+
+            // assemble header: arrow, checkbox, emoji, title
+            header.appendChild(arrow);
+            header.appendChild(toggle);
+            header.appendChild(emojiSpan);
+            header.appendChild(titleSpan);
+
+            const body = document.createElement('div');
+            body.className = 'category-body';
+            // start all categories collapsed
+            body.style.display = 'none';
+
+            const domainsContainer = document.createElement('div');
+            domainsContainer.className = 'domains-container';
+            // indent domains visually
+            domainsContainer.style.paddingLeft = '26px';
+            domainsContainer.style.display = 'flex';
+            domainsContainer.style.flexDirection = 'column';
+            // sort domains alphabetically for display
+            const domainsList = (category.domains || []).slice().sort((a, b) => {
+                const aStr = (typeof a === 'string') ? a : (a.domain || '');
+                const bStr = (typeof b === 'string') ? b : (b.domain || '');
+                return aStr.toLowerCase().localeCompare(bStr.toLowerCase());
+            });
+            domainsList.forEach(d => {
+                // editable only for custom_domains
+                const isCustom = (category.id === 'custom_domains');
+                const row = createDomainRow(d, true, isCustom);
+                domainsContainer.appendChild(row);
             });
 
-            const iconSpan = document.createElement('span');
-            const icons = {
-                trackers_ads: '🕵️',
-                social_networks: '👥',
-                sensitive_sites: '⚠️',
-                custom_domains: '✳️'
-            };
-            iconSpan.textContent = category.emoji || icons[category.id] || '•';
-            iconSpan.className = 'category-icon';
-
-            const titleText = document.createElement('span');
-            // Resolve category label with priority:
-            // 1) chrome.i18n message `category_<id>` (preferred)
-            // 2) category.label[lang]
-            // 3) category.label.en
-            // 4) category.id
-            let titleLabel = category.id;
-            try {
-                const i18nKey = 'category_' + category.id;
-                const i18nMsg = (chrome.i18n && chrome.i18n.getMessage) ? chrome.i18n.getMessage(i18nKey) : '';
-                if (i18nMsg && i18nMsg !== i18nKey && i18nMsg.trim() !== '') {
-                    // Use chrome.i18n value if available
-                    titleLabel = i18nMsg;
-                } else if (category.label) {
-                    // Prefer language-specific label from the category data
-                    if (typeof category.label === 'string') titleLabel = category.label;
-                    else titleLabel = category.label[lang] || category.label.en || Object.values(category.label)[0] || category.id;
-                } else {
-                    titleLabel = category.id;
-                }
-            } catch (e) {
-                titleLabel = (category.label && (category.label[lang] || category.label.en)) || category.id;
+            // only custom category has add button and editable inputs
+            if (category.id === 'custom_domains') {
+                const addBtn = document.createElement('button');
+                addBtn.type = 'button';
+                addBtn.className = 'add-domain-btn';
+                addBtn.textContent = '+ ' + (addDomainText || 'Add domain');
+                addBtn.addEventListener('click', () => {
+                    const newRow = createDomainRow('', true, true);
+                    domainsContainer.appendChild(newRow);
+                });
+                // small gap between title and first domain
+                domainsContainer.style.marginTop = '6px';
+                body.appendChild(domainsContainer);
+                body.appendChild(addBtn);
+            } else {
+                body.appendChild(domainsContainer);
             }
-            titleText.textContent = ` ${titleLabel}`;
-
-            header.appendChild(arrow);
-            header.appendChild(checkbox);
-            header.appendChild(iconSpan);
-            header.appendChild(titleText);
 
             section.appendChild(header);
-            section.appendChild(domainsList);
-            if (addBtn) section.appendChild(addBtn);
+            section.appendChild(body);
             categoriesContainer.appendChild(section);
+
+            // clicking header toggles collapse (ignore clicks on the checkbox)
+            header.addEventListener('click', (e) => {
+                if (e.target && e.target.classList && e.target.classList.contains('category-enabled')) return;
+                if (body.style.display === 'none') {
+                    body.style.display = 'block';
+                    arrow.textContent = '▾';
+                } else {
+                    body.style.display = 'none';
+                    arrow.textContent = '▸';
+                }
+            });
+
+            // when toggling category enabled, do not auto-expand/collapse body; only update arrow state
+            toggle.addEventListener('change', () => {
+                arrow.textContent = toggle.checked ? '▾' : '▸';
+            });
         });
     }
 
@@ -421,18 +427,30 @@ document.addEventListener('DOMContentLoaded', function () {
             if (importLabel) importLabel.textContent = t('import_config');
             if (resetLabel) resetLabel.textContent = t('reset_defaults');
             if (saveLabel) saveLabel.textContent = t('save_label');
+            if (forceDefaultsBtn) forceDefaultsBtn.textContent = '🔄 ' + (t('force_defaults') || 'Force defaults');
+            if (revertBackupBtn) revertBackupBtn.textContent = '⤺ ' + (t('revert_backup') || 'Revert backup');
             // set version label from manifest
             try {
                 const v = (chrome.runtime && chrome.runtime.getManifest) ? chrome.runtime.getManifest().version : null;
                 const versionLabel = document.getElementById('version-label');
-                if (versionLabel) versionLabel.textContent = v ? ("Version: " + v) : '';
+                if (versionLabel) versionLabel.textContent = v ? ("App Version: " + v) : '';
+                const dataVersionLabel = document.getElementById('data-version-label');
+                try {
+                    chrome.storage.local.get('defaultsMeta', (res) => {
+                        const meta = res && res.defaultsMeta ? res.defaultsMeta : null;
+                        const dv = (meta && meta.appliedDefaultsVersion) ? meta.appliedDefaultsVersion : (DEFAULTS_VERSION || '');
+                        if (dataVersionLabel) dataVersionLabel.textContent = (dv ? dv : '');
+                    });
+                } catch (e) {
+                    if (dataVersionLabel) dataVersionLabel.textContent = (DEFAULTS_VERSION || '');
+                }
             } catch (e) { }
             renderCategories(cfg);
             // after render, first apply local defaults (from bundled options.json) if its version changed,
             // then fetch remote defaults and apply if any. Both use the same merge helper.
             const localDefaults = { defaultsVersion: (defaultConfig && defaultConfig.version) ? defaultConfig.version : DEFAULTS_VERSION, categories: defaultConfig.categories };
             mergeDefaultsAndSave(localDefaults).then(localRes => {
-                if (localRes && localRes.applied) {
+                if (localRes && localRes.version) {
                     try { showToast(`Defaults updated to ${localRes.version}`, 5000, 'info'); } catch (e) { }
                     const banner = document.getElementById('defaults-banner');
                     const bannerText = document.getElementById('defaults-banner-text');
@@ -441,7 +459,25 @@ document.addEventListener('DOMContentLoaded', function () {
                         bannerText.textContent = `Defaults have been updated to ${localRes.version}.`;
                         if (reviewBtn) reviewBtn.style.display = 'inline-block';
                         banner.style.display = 'block';
-                        reviewBtn.addEventListener('click', () => { loadConfig(); banner.style.display = 'none'; });
+                        if (reviewBtn) {
+                            reviewBtn.onclick = () => {
+                                loadConfig();
+                                banner.style.display = 'none';
+                                try {
+                                    const container = document.getElementById('categories-container');
+                                    if (container) {
+                                        container.scrollIntoView({ behavior: 'smooth' });
+                                        const first = container.querySelector('section.category');
+                                        if (first) {
+                                            first.style.transition = 'background-color 0.3s';
+                                            const prev = first.style.backgroundColor;
+                                            first.style.backgroundColor = '#fff7e6';
+                                            setTimeout(() => { first.style.backgroundColor = prev || ''; }, 2000);
+                                        }
+                                    }
+                                } catch (e) { }
+                            };
+                        }
                     }
                 }
             }).catch(() => { /* ignore */ }).finally(() => {
@@ -455,7 +491,25 @@ document.addEventListener('DOMContentLoaded', function () {
                             bannerText.textContent = `Defaults have been updated to ${res.version}.`;
                             if (reviewBtn) reviewBtn.style.display = 'inline-block';
                             banner.style.display = 'block';
-                            reviewBtn.addEventListener('click', () => { loadConfig(); banner.style.display = 'none'; });
+                            if (reviewBtn) {
+                                reviewBtn.onclick = () => {
+                                    loadConfig();
+                                    banner.style.display = 'none';
+                                    try {
+                                        const container = document.getElementById('categories-container');
+                                        if (container) {
+                                            container.scrollIntoView({ behavior: 'smooth' });
+                                            const first = container.querySelector('section.category');
+                                            if (first) {
+                                                first.style.transition = 'background-color 0.3s';
+                                                const prev = first.style.backgroundColor;
+                                                first.style.backgroundColor = '#fff7e6';
+                                                setTimeout(() => { first.style.backgroundColor = prev || ''; }, 2000);
+                                            }
+                                        }
+                                    } catch (e) { }
+                                };
+                            }
                         }
                     }
                 }).catch(() => { /* ignore */ });
@@ -508,7 +562,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (localRes && localRes.applied) showToast(t('defaults_applied') || 'Local defaults applied', 4000, 'info');
                 // then attempt remote
                 const remoteRes = await fetchAndApplyRemoteDefaultsIfAny();
-                if (remoteRes && remoteRes.applied) showToast(t('defaults_applied_remote') || ('Remote defaults applied: ' + remoteRes.version), 4000, 'info');
+                if (remoteRes && remoteRes.version) showToast(t('defaults_applied_remote') || ('Remote defaults applied: ' + remoteRes.version), 4000, 'info');
                 if ((!localRes || !localRes.applied) && (!remoteRes || !remoteRes.applied)) showToast(t('defaults_no_change') || 'No defaults changes', 3000, 'info');
                 loadConfig();
             } catch (e) {

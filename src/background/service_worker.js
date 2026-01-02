@@ -4,11 +4,29 @@
 
 // Load helper scripts (cleanup, config) into the worker scope
 try {
-    importScripts('cleanup.js', 'config.js');
+    // Prefer absolute extension URLs so import works regardless of CWD
+    const scriptUrls = [];
+    try {
+        if (chrome && chrome.runtime && chrome.runtime.getURL) {
+            scriptUrls.push(chrome.runtime.getURL('src/background/cleanup.js'));
+            scriptUrls.push(chrome.runtime.getURL('src/background/config.js'));
+        } else {
+            scriptUrls.push('cleanup.js');
+            scriptUrls.push('config.js');
+        }
+    } catch (uerr) {
+        scriptUrls.push('cleanup.js');
+        scriptUrls.push('config.js');
+    }
+    importScripts(...scriptUrls);
 } catch (e) {
-    // importScripts may fail in some contexts; the files should be available in the same folder
     console.error('Failed to import background scripts:', e);
 }
+
+// Non-disruptive startup marker to help debug service worker activation
+try {
+    chrome.storage && chrome.storage.local && chrome.storage.local.set && chrome.storage.local.set({ serviceWorkerLoaded: Date.now() });
+} catch (e) { /* ignore */ }
 
 chrome.runtime.onInstalled.addListener(async () => {
     // installation event
@@ -46,13 +64,39 @@ function normalizeDomainName(d) {
     return s;
 }
 
+// Compare simple semantic version strings like "0.1.3". Returns 1 if a>b, 0 if equal, -1 if a<b
+function compareVersions(a, b) {
+    if (!a || !b) return 0;
+    try {
+        const pa = String(a).split(/[.-]/).map(s => parseInt(s, 10));
+        const pb = String(b).split(/[.-]/).map(s => parseInt(s, 10));
+        const len = Math.max(pa.length, pb.length);
+        for (let i = 0; i < len; i++) {
+            const na = Number.isFinite(pa[i]) ? pa[i] : 0;
+            const nb = Number.isFinite(pb[i]) ? pb[i] : 0;
+            if (na > nb) return 1;
+            if (na < nb) return -1;
+        }
+        return 0;
+    } catch (e) {
+        // fallback to string compare
+        if (a === b) return 0;
+        return a > b ? 1 : -1;
+    }
+}
+
 async function applyDefaultsObject(defaultsObj) {
     try {
         if (!defaultsObj || !Array.isArray(defaultsObj.categories)) return { applied: false };
         const remoteVersion = defaultsObj.defaultsVersion || defaultsObj.version || null;
         const meta = await storageLocalGet('defaultsMeta');
         const lastApplied = (meta && meta.defaultsMeta && meta.defaultsMeta.appliedDefaultsVersion) ? meta.defaultsMeta.appliedDefaultsVersion : null;
-        if (lastApplied && remoteVersion && lastApplied === remoteVersion) return { applied: false };
+        // If we already applied a version that is newer or equal to the remote, skip applying older/same defaults
+        try {
+            if (lastApplied && remoteVersion && compareVersions(remoteVersion, lastApplied) <= 0) {
+                return { applied: false };
+            }
+        } catch (e) { /* ignore comparison errors and continue */ }
 
         const cfg = await self.loadConfig();
 
@@ -131,36 +175,44 @@ async function fetchAndApplyDefaultsUrl(url) {
 // Ensure periodic alarm exists
 function ensureDefaultsAlarm() {
     try {
-        chrome.alarms.get(DEFAULTS_CHECK_ALARM, (a) => {
-            if (!a) chrome.alarms.create(DEFAULTS_CHECK_ALARM, { periodInMinutes: DEFAULTS_CHECK_PERIOD_MINUTES });
-        });
+        if (chrome && chrome.alarms && typeof chrome.alarms.get === 'function') {
+            chrome.alarms.get(DEFAULTS_CHECK_ALARM, (a) => {
+                if (!a && typeof chrome.alarms.create === 'function') chrome.alarms.create(DEFAULTS_CHECK_ALARM, { periodInMinutes: DEFAULTS_CHECK_PERIOD_MINUTES });
+            });
+        } else {
+            console.warn('chrome.alarms API not available; skipping defaults alarm creation');
+        }
     } catch (e) { /* ignore */ }
 }
 
-chrome.alarms.onAlarm.addListener((alarm) => {
-    if (!alarm || alarm.name !== DEFAULTS_CHECK_ALARM) return;
-    // try remote fetch
-    try {
-        chrome.storage.local.get('remoteDefaultsUrl', (r) => {
-            const maybe = (r && r.remoteDefaultsUrl) ? r.remoteDefaultsUrl : null;
-            if (maybe) {
-                fetchAndApplyDefaultsUrl(maybe).then(res => {
-                    if (res && res.applied) console.info('Periodic defaults applied', res.version);
-                }).catch(() => { /* ignore */ });
-            } else {
-                try {
-                    const cfgUrl = chrome.runtime.getURL('src/shared/defaults-config.json');
-                    fetch(cfgUrl).then(rr => rr.ok ? rr.json() : null).then(cfgData => {
-                        const url = cfgData && cfgData.fallbackUrl ? cfgData.fallbackUrl : null;
-                        if (url) fetchAndApplyDefaultsUrl(url).then(res => {
-                            if (res && res.applied) console.info('Periodic defaults applied', res.version);
-                        }).catch(() => { /* ignore */ });
-                    }).catch(() => { });
-                } catch (e) { }
-            }
-        });
-    } catch (e) { /* ignore */ }
-});
+if (chrome && chrome.alarms && chrome.alarms.onAlarm && typeof chrome.alarms.onAlarm.addListener === 'function') {
+    chrome.alarms.onAlarm.addListener((alarm) => {
+        if (!alarm || alarm.name !== DEFAULTS_CHECK_ALARM) return;
+        // try remote fetch
+        try {
+            chrome.storage.local.get('remoteDefaultsUrl', (r) => {
+                const maybe = (r && r.remoteDefaultsUrl) ? r.remoteDefaultsUrl : null;
+                if (maybe) {
+                    fetchAndApplyDefaultsUrl(maybe).then(res => {
+                        if (res && res.applied) console.info('Periodic defaults applied', res.version);
+                    }).catch(() => { /* ignore */ });
+                } else {
+                    try {
+                        const cfgUrl = chrome.runtime.getURL('src/shared/defaults-config.json');
+                        fetch(cfgUrl).then(rr => rr.ok ? rr.json() : null).then(cfgData => {
+                            const url = cfgData && cfgData.fallbackUrl ? cfgData.fallbackUrl : null;
+                            if (url) fetchAndApplyDefaultsUrl(url).then(res => {
+                                if (res && res.applied) console.info('Periodic defaults applied', res.version);
+                            }).catch(() => { /* ignore */ });
+                        }).catch(() => { });
+                    } catch (e) { }
+                }
+            });
+        } catch (e) { /* ignore */ }
+    });
+} else {
+    console.warn('chrome.alarms.onAlarm not available in this context');
+}
 
 // Run checks on install/update and on startup
 chrome.runtime.onInstalled.addListener(async (details) => {
@@ -258,23 +310,34 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         return false;
     }
 
+    // Quick persistent debug: write the incoming request to storage so user can inspect
+    try {
+        chrome.storage.local.set({ lastMessageReceived: { request: request, sender: sender || null, ts: Date.now() } });
+    } catch (e) { /* ignore */ }
+
     (async () => {
         try {
             if (request.action === 'cleanAllEnabledTargets') {
                 const cfg = await self.loadConfig();
                 await self.cleanAllEnabledTargets(cfg);
                 const res = await storageLocalGet('lastRunSummary');
-                sendResponse({ success: true, summary: res.lastRunSummary || null });
+                const payload = { success: true, summary: res.lastRunSummary || null };
+                try { chrome.storage.local.set({ lastMessageResponse: payload }); } catch (e) { }
+                sendResponse(payload);
                 return;
             }
 
             if (request.action === 'cleanCurrentDomain' && request.url) {
                 const result = await self.cleanSingleDomain(request.url);
                 if (result && result.error) {
-                    sendResponse({ success: false, error: result.error });
+                    const payload = { success: false, error: result.error };
+                    try { chrome.storage.local.set({ lastMessageResponse: payload }); } catch (e) { }
+                    sendResponse(payload);
                 } else {
                     const res = await storageLocalGet('lastRunSummary');
-                    sendResponse({ success: true, summary: res.lastRunSummary || null });
+                    const payload = { success: true, summary: res.lastRunSummary || null };
+                    try { chrome.storage.local.set({ lastMessageResponse: payload }); } catch (e) { }
+                    sendResponse(payload);
                 }
                 return;
             }
@@ -284,15 +347,20 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 const cfg = await self.loadConfig();
                 await self.cleanAllEnabledTargets(cfg);
                 const res = await storageLocalGet('lastRunSummary');
-                sendResponse({ success: true, summary: res.lastRunSummary || null });
+                const payload = { success: true, summary: res.lastRunSummary || null };
+                try { chrome.storage.local.set({ lastMessageResponse: payload }); } catch (e) { }
+                sendResponse(payload);
                 return;
             }
 
             // resizeWindow handler removed per user request
 
-            sendResponse({ success: false, error: 'unknown action' });
+            const payload = { success: false, error: 'unknown action' };
+            try { chrome.storage.local.set({ lastMessageResponse: payload }); } catch (e) { }
+            sendResponse(payload);
         } catch (e) {
             console.error('Message handler failed:', e);
+            try { chrome.storage.local.set({ lastMessageError: String(e) }); } catch (ex) { }
             sendResponse({ success: false, error: String(e) });
         }
     })();

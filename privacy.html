@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Web Purge — Privacy</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+            margin: 40px;
+            line-height: 1.5;
+            color: #111
+        }
+
+        h1 {
+            font-size: 1.6rem
+        }
+
+        a {
+            color: #0366d6
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Privacy notice — Web Purge</h1>
+    <p>Web Purge is a small browser extension that helps remove browsing data (history, cookies, localStorage, cache)
+        associated with configured target sites. It stores only minimal configuration and backup data in
+        <strong>chrome.storage</strong> (sync and/or local) to remember which categories and domains you have enabled
+        and to support non-destructive defaults updates.
+    </p>
+
+    <h2>What we store</h2>
+    <ul>
+        <li><strong>Configuration:</strong> your selected categories and per-domain enabled flags (in
+            <code>chrome.storage.sync</code>).
+        </li>
+        <li><strong>Backups & metadata:</strong> previous configs and defaults metadata (in
+            <code>chrome.storage.local</code>).
+        </li>
+        <li><strong>Debug markers:</strong> temporary keys used only for development.</li>
+    </ul>
+
+    <h2>What we don't collect</h2>
+    <p>Web Purge does not send your browsing data to any remote server. It only performs cleanup actions locally within
+        your browser. Remote defaults (published JSON) are fetched only to update the shipped list of default domains;
+        these files contain only domain lists and version metadata.</p>
+
+    <h2>Data retention</h2>
+    <p>Sync configuration remains in your browser profile and (optionally) across your signed-in Chrome profiles if you
+        use <code>chrome.storage.sync</code>. Local backups are kept in <code>chrome.storage.local</code> and rotated
+        (old backups removed) by the extension.</p>
+
+    <h2>Questions</h2>
+    <p>Open an issue on the project repository or contact the maintainer if you have privacy concerns.</p>
+
+    <p><a href="/">Back to index</a></p>
+</body>
+
+</html>

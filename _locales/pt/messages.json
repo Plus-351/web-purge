@@ -4,7 +4,7 @@
         "description": "Nome da extensão"
     },
     "options_title": {
-        "message": "Opções do Web Purge",
+        "message": "⚙️ Opções do Web Purge",
         "description": "Título da página de opções"
     },
     "panic_button": {
@@ -68,7 +68,7 @@
         "description": "Mensagem de erro ao importar"
     },
     "options_subtitle": {
-        "message": "⚙️ Web Purge",
+        "message": "Web Purge",
         "description": "Subtítulo mostrado na página de opções"
     },
     "behavior_title": {
@@ -95,6 +95,10 @@
         "message": "Domínios personalizados",
         "description": "Etiqueta de categoría"
     },
+    "category_icon": {
+        "message": "🏷️",
+        "description": "Etiqueta de categoría"
+    },
     "last_run": {
         "message": "Última execução: {timestamp}",
         "description": "Mostra a última execução"
@@ -110,5 +114,49 @@
     "last_error": {
         "message": "Último erro: {error}",
         "description": "Mostra a última mensagem de erro"
+    },
+    "force_defaults": {
+        "message": "Forçar padrões",
+        "description": "Botão para forçar a aplicação dos padrões"
+    },
+    "revert_backup": {
+        "message": "Reverter backup",
+        "description": "Botão para restaurar o último backup"
+    },
+    "data_version_label": {
+        "message": "Versão de dados:",
+        "description": "Rótulo para a versão dos dados aplicados"
+    },
+    "defaults_applied": {
+        "message": "Padrões aplicados",
+        "description": "Notificação quando os padrões locais são aplicados"
+    },
+    "defaults_applied_remote": {
+        "message": "Padrões remotos aplicados: {version}",
+        "description": "Notificação quando os padrões remotos são aplicados"
+    },
+    "defaults_no_change": {
+        "message": "Nenhuma alteração nos padrões",
+        "description": "Notificação quando não há mudanças nos padrões"
+    },
+    "defaults_error": {
+        "message": "Falha na verificação dos padrões",
+        "description": "Notificação de erro na verificação de padrões"
+    },
+    "no_backups": {
+        "message": "Nenhum backup disponível",
+        "description": "Notificar quando não há backups"
+    },
+    "backup_missing": {
+        "message": "Backup não encontrado",
+        "description": "Notificar quando o backup está ausente"
+    },
+    "backup_restored": {
+        "message": "Backup restaurado",
+        "description": "Notificar quando o backup é restaurado"
+    },
+    "backup_error": {
+        "message": "Não foi possível restaurar o backup",
+        "description": "Notificar quando falha a restauração do backup"
     }
 }
