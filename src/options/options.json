@@ -89,5 +89,5 @@
     }
     ,
     "defaultsVersion": "1.0.0",
-    "remoteDefaultsUrl": "https://YOUR_HOST/path/web-purge-defaults.json"
+    "remoteDefaultsUrl": "https://Plus-351.github.io/web-purge/web-purge-defaults.json"
 }

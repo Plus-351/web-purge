@@ -56,12 +56,11 @@ Notes:
 
 	Alternatively you can enable Pages from the root or use a `gh-pages` branch; hosting on GitHub Pages provides a stable HTTPS URL suitable for the Chrome Web Store privacy policy field.
 
-Note about `pages/`: I've added a `pages/` folder with `web-purge-defaults.json` (a copy of the current `src/options/options.json` defaults). You can use this folder to iterate on remote defaults locally. To publish it on GitHub Pages you can either:
+Note about `docs/`: This repository contains a `docs/` folder with `web-purge-defaults.json` (a copy of the current `src/options/options.json` defaults) and the privacy page. You can publish these files using GitHub Pages by enabling Pages for the `main` branch and selecting the `/docs` folder as the source. Once published, the defaults JSON will be available at:
 
-- Copy `pages/` contents to `docs/` (preferred for a quick setup) and enable Pages from `main` → `/docs`.
-- Or use a GitHub Action to deploy `pages/` to the `gh-pages` branch so `https://<user>.github.io/<repo>/web-purge-defaults.json` becomes available.
+- `https://Plus-351.github.io/web-purge/web-purge-defaults.json`
 
-Either approach gives you a stable HTTPS URL to put into `src/options/options.json` -> `remoteDefaultsUrl` for testing updates.
+If you prefer an automated workflow you can also use a GitHub Action to publish a different folder (or deploy to the `gh-pages` branch). Use the public HTTPS URL above as the `remoteDefaultsUrl` in `src/options/options.json` for the extension to fetch remote defaults.
 
 ## Configuration
 
