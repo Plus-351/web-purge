@@ -89,3 +89,14 @@ MIT — see [LICENSE](LICENSE).
 ## Contact
 
 Visit <https://plus351.com/contact/> for feedback.
+
+## Testing & screenshots
+
+- **Force defaults:** open Options → click "Force defaults" to apply bundled defaults and then remote defaults. Use this to verify merged categories and new domains appear as expected.
+- **Revert backup:** after making changes, use "Revert backup" to restore the most recent saved backup (created automatically during merges and normalizations).
+- **Quick checks:** after forcing defaults, inspect `chrome.storage.local` for `defaultsMeta` and backup keys (`webPurgeConfig_backup_...`) and `chrome.storage.sync` for `webPurgeConfig` to validate the merge.
+- **Screenshots to capture:** Options page with categories, popup displaying counts after a clean, and the defaults banner shown after a defaults update.
+
+## Chrome Web Store — private testing
+
+You can upload a draft to the Chrome Web Store and keep it unlisted so only people with the URL can view/install it. In the Developer Dashboard set visibility to "Unlisted" (or use private distribution via your organization's domain). This is useful for sharing test builds with reviewers before public release.

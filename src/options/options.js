@@ -17,7 +17,8 @@ document.addEventListener('DOMContentLoaded', function () {
     // resize UI removed per user request
 
     // Remote defaults configuration (kept here so repo defaults JSON remains data-only)
-    const REMOTE_DEFAULTS_URL = 'https://Plus-351.github.io/web-purge/web-purge-defaults.json';
+    // REMOTE_DEFAULTS_URL will be initialized from src/shared/defaults-config.json when available.
+    let REMOTE_DEFAULTS_URL = null;
     // DEFAULTS_VERSION will be derived after loading the local JSON or from stored applied defaults.
     let DEFAULTS_VERSION = null;
 
@@ -38,14 +39,21 @@ document.addEventListener('DOMContentLoaded', function () {
                 ui: (data.ui || { showSensitiveCategory: true }),
                 categories: (data.categories || [])
             };
-            // ensure remoteDefaultsUrl is available in storage.local for the service worker
+            // try to read shared defaults-config.json to get a centralized fallback URL
             try {
-                chrome.storage.local.get('remoteDefaultsUrl', function (res) {
-                    if (!res || !res.remoteDefaultsUrl) {
-                        chrome.storage.local.set({ remoteDefaultsUrl: REMOTE_DEFAULTS_URL });
-                    }
-                });
-            } catch (e) { }
+                const cfgUrl = chrome.runtime.getURL('src/shared/defaults-config.json');
+                fetch(cfgUrl).then(r2 => r2.ok ? r2.json() : null).then(cfgData => {
+                    if (cfgData && cfgData.fallbackUrl) REMOTE_DEFAULTS_URL = cfgData.fallbackUrl;
+                    // ensure remoteDefaultsUrl is available in storage.local for the service worker
+                    try {
+                        chrome.storage.local.get('remoteDefaultsUrl', function (res) {
+                            if (!res || !res.remoteDefaultsUrl) {
+                                chrome.storage.local.set({ remoteDefaultsUrl: REMOTE_DEFAULTS_URL });
+                            }
+                        });
+                    } catch (e) { }
+                }).catch(() => { /* ignore */ });
+            } catch (e) { /* ignore */ }
             return defaultConfig;
         }).catch(err => {
             // fallback minimal defaults
