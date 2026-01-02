@@ -6,8 +6,6 @@ document.addEventListener('DOMContentLoaded', function () {
     const importButton = document.getElementById('import-config-btn');
     const importInput = document.getElementById('import-config');
     const resetButton = document.getElementById('reset-defaults');
-    const forceDefaultsBtn = document.getElementById('force-defaults');
-    const revertBackupBtn = document.getElementById('revert-backup');
     const form = document.getElementById('options-form');
     const saveLabel = document.getElementById('save-label');
     const exportLabel = document.getElementById('export-label');
@@ -104,6 +102,23 @@ document.addEventListener('DOMContentLoaded', function () {
         return d;
     }
 
+    // Compare semantic versions like '0.1.5' -> returns -1 if a<b, 0 if equal, 1 if a>b
+    function compareVersions(a, b) {
+        if (!a && !b) return 0;
+        if (!a) return -1;
+        if (!b) return 1;
+        const pa = String(a).split('.').map(x => parseInt(x, 10) || 0);
+        const pb = String(b).split('.').map(x => parseInt(x, 10) || 0);
+        const len = Math.max(pa.length, pb.length);
+        for (let i = 0; i < len; i++) {
+            const na = pa[i] || 0;
+            const nb = pb[i] || 0;
+            if (na < nb) return -1;
+            if (na > nb) return 1;
+        }
+        return 0;
+    }
+
     // Merge helper that performs global dedupe across categories and saves merged config
     async function mergeDefaultsAndSave(remote) {
         try {
@@ -113,7 +128,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
             const meta = await new Promise(resolve => chrome.storage.local.get('defaultsMeta', res => resolve(res.defaultsMeta || {})));
             const lastApplied = meta.appliedDefaultsVersion || null;
-            if (lastApplied && (lastApplied === remote.defaultsVersion)) return { applied: false };
+            // If we've already applied an equal or newer defaults version, skip applying
+            // unless the remote object explicitly requests a forced apply (e.g. reset button).
+            if (!remote.force && lastApplied && compareVersions(lastApplied, remote.defaultsVersion) >= 0) return { applied: false };
 
             const stored = await new Promise(resolve => chrome.storage.sync.get('webPurgeConfig', res => resolve(res.webPurgeConfig || null)));
             let userCfg = stored || JSON.parse(JSON.stringify(defaultConfig || { categories: [] }));
@@ -228,12 +245,18 @@ document.addEventListener('DOMContentLoaded', function () {
 
             if (changes) {
                 await new Promise(resolve => chrome.storage.sync.set({ webPurgeConfig: userCfg }, resolve));
-                await new Promise(resolve => chrome.storage.local.set({ defaultsMeta: { appliedDefaultsVersion: remote.defaultsVersion, lastDefaultsFetchTime: Date.now() } }, resolve));
+                // Only update metadata if remote version is newer than previously applied
+                if (!lastApplied || compareVersions(remote.defaultsVersion, lastApplied) > 0) {
+                    await new Promise(resolve => chrome.storage.local.set({ defaultsMeta: { appliedDefaultsVersion: remote.defaultsVersion, lastDefaultsFetchTime: Date.now() } }, resolve));
+                }
                 return { applied: true, version: remote.defaultsVersion };
             } else {
-                // update meta anyway to avoid re-checking too often
-                await new Promise(resolve => chrome.storage.local.set({ defaultsMeta: { appliedDefaultsVersion: remote.defaultsVersion, lastDefaultsFetchTime: Date.now() } }, resolve));
-                return { applied: false, version: remote.defaultsVersion, metaUpdated: true };
+                // update meta only if remote version is newer than previously applied
+                if (!lastApplied || compareVersions(remote.defaultsVersion, lastApplied) > 0) {
+                    await new Promise(resolve => chrome.storage.local.set({ defaultsMeta: { appliedDefaultsVersion: remote.defaultsVersion, lastDefaultsFetchTime: Date.now() } }, resolve));
+                    return { applied: false, version: remote.defaultsVersion, metaUpdated: true };
+                }
+                return { applied: false, version: remote.defaultsVersion };
             }
         } catch (e) {
             console.warn('mergeDefaultsAndSave failed', e);
@@ -293,7 +316,11 @@ document.addEventListener('DOMContentLoaded', function () {
             remove.className = 'remove-icon';
             remove.textContent = '🗑️';
             remove.title = t('delete_domain') || 'Delete domain';
-            remove.addEventListener('click', () => div.remove());
+            remove.addEventListener('click', () => {
+                const parent = div.parentElement;
+                div.remove();
+                try { if (parent) parent.dispatchEvent(new Event('change')); } catch (e) { }
+            });
 
             div.appendChild(checkbox);
             div.appendChild(input);
@@ -312,19 +339,38 @@ document.addEventListener('DOMContentLoaded', function () {
         try { return chrome.i18n.getMessage(key) || key; } catch (e) { return key; }
     }
 
-    // Prefer the extension UI language when available, otherwise fall back to navigator
-    let lang = 'en';
+    // Build a prioritized list of preferred languages (e.g. ['es','en']).
+    // Initialize synchronously from getUILanguage/navigator so render uses correct language immediately.
+    let preferredLangs = ['en'];
     try {
         if (chrome && chrome.i18n && typeof chrome.i18n.getUILanguage === 'function') {
             const ui = chrome.i18n.getUILanguage();
-            if (ui) lang = ui.split('-')[0];
+            if (ui) preferredLangs = [ui.split('-')[0]];
+        } else if (navigator.languages && Array.isArray(navigator.languages) && navigator.languages.length) {
+            preferredLangs = navigator.languages.map(a => (a || '').split('-')[0]).filter(Boolean);
         } else {
             const nav = (navigator.language || navigator.userLanguage || 'en');
-            lang = nav.split('-')[0];
+            preferredLangs = [nav.split('-')[0]];
         }
-    } catch (e) {
-        lang = 'en';
-    }
+
+        // Asynchronously ask for accept-languages and update if different; re-render categories.
+        if (chrome && chrome.i18n && typeof chrome.i18n.getAcceptLanguages === 'function') {
+            try {
+                chrome.i18n.getAcceptLanguages((arr) => {
+                    if (!arr || !Array.isArray(arr) || !arr.length) return;
+                    const newPrefs = arr.map(a => (a || '').split('-')[0]).filter(Boolean);
+                    const same = (newPrefs.length === preferredLangs.length && newPrefs.every((v, i) => v === preferredLangs[i]));
+                    if (!same) {
+                        preferredLangs = newPrefs;
+                        try { if (currentConfig) renderCategories(currentConfig); } catch (e) { /* ignore */ }
+                    }
+                });
+            } catch (e) { /* ignore async accept-languages */ }
+        }
+    } catch (e) { preferredLangs = ['en']; }
+
+    // track last loaded config so we can re-render if languages update
+    let currentConfig = null;
 
     function renderCategories(config) {
         clearCategoriesUI();
@@ -344,7 +390,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
             const toggle = document.createElement('input');
             toggle.type = 'checkbox';
-            toggle.checked = !!category.enabled;
             toggle.className = 'category-enabled';
             toggle.dataset.id = category.id;
 
@@ -356,28 +401,86 @@ document.addEventListener('DOMContentLoaded', function () {
             titleSpan.className = 'category-title';
             // Prefer explicit i18n messages when available (we only add `category_custom_domains` in _locales),
             // otherwise fall back to the per-category label from the defaults JSON.
-            try {
-                let titleText = category.id;
-                if (chrome && chrome.i18n && typeof chrome.i18n.getMessage === 'function') {
-                    const msg = chrome.i18n.getMessage('category_' + category.id) || '';
-                    if (msg) {
-                        titleText = msg;
-                    } else if (category.label) {
-                        titleText = category.label[lang] || category.label.en || category.id;
+            // Resolve category title with robust fallbacks:
+            // 1) i18n message `category_<id>` if present
+            // 2) `category.label` when it's a string or object, try exact lang (es, pt),
+            //    then keys that start with the lang (es_ES), then `en`, then first available.
+            function resolveCategoryTitle(cat) {
+                try {
+                    if (chrome && chrome.i18n && typeof chrome.i18n.getMessage === 'function') {
+                        const i18nKey = 'category_' + cat.id;
+                        const msg = chrome.i18n.getMessage(i18nKey) || '';
+                        if (msg) return msg;
                     }
-                } else {
-                    titleText = (category.label && (category.label[lang] || category.label.en)) || category.id;
-                }
-                titleSpan.textContent = titleText;
-            } catch (e) {
-                titleSpan.textContent = (category.label && (category.label[lang] || category.label.en)) || category.id;
+                } catch (e) { /* ignore i18n errors */ }
+
+                const l = cat.label;
+                if (!l) return cat.id;
+                if (typeof l === 'string') return l;
+
+                // try preferred languages in order, and also check navigator/document signals
+                try {
+                    const keys = Object.keys(l || {});
+                    const extraPrefs = [];
+                    try {
+                        if (navigator && navigator.languages && navigator.languages.length) {
+                            extraPrefs.push(...navigator.languages.map(a => (a || '').split('-')[0]).filter(Boolean));
+                        }
+                    } catch (e) { }
+                    try {
+                        const docLang = (document && document.documentElement && document.documentElement.lang) ? document.documentElement.lang.split('-')[0] : null;
+                        if (docLang) extraPrefs.push(docLang);
+                    } catch (e) { }
+                    try {
+                        if (chrome && chrome.i18n && typeof chrome.i18n.getUILanguage === 'function') {
+                            const ui = chrome.i18n.getUILanguage();
+                            if (ui) extraPrefs.push(ui.split('-')[0]);
+                        }
+                    } catch (e) { }
+
+                    const combined = Array.from(new Set([...(preferredLangs || []), ...extraPrefs]));
+                    for (const p of combined) {
+                        if (typeof l[p] === 'string' && l[p].length) return l[p];
+                    }
+                    // try exact matches against label keys (case-insensitive)
+                    for (const k of keys) {
+                        for (const p of combined) {
+                            if (k.toLowerCase() === p.toLowerCase()) return l[k];
+                        }
+                    }
+                    // try regional variants like 'es_ES' that start with preferred lang
+                    for (const k of keys) {
+                        for (const p of combined) {
+                            if (k.toLowerCase().startsWith((p || '').toLowerCase() + '_')) return l[k];
+                        }
+                    }
+                    if (typeof l.en === 'string' && l.en.length) return l.en;
+                    if (keys.length) return l[keys[0]];
+                } catch (e) { /* ignore */ }
+
+                return cat.id;
             }
+
+            titleSpan.textContent = resolveCategoryTitle(category);
 
             // assemble header: arrow, checkbox, emoji, title
             header.appendChild(arrow);
             header.appendChild(toggle);
             header.appendChild(emojiSpan);
             header.appendChild(titleSpan);
+
+            // when toggling category checkbox, mark/unmark all domain checkboxes
+            toggle.addEventListener('change', () => {
+                try {
+                    const rows = Array.from(domainsContainer.querySelectorAll('.domain-row'));
+                    rows.forEach(r => {
+                        const cb = r.querySelector('.domain-enabled');
+                        if (cb) cb.checked = !!toggle.checked;
+                    });
+                    // update indeterminate state
+                    toggle.indeterminate = false;
+                } catch (e) { /* ignore */ }
+            });
 
             const body = document.createElement('div');
             body.className = 'category-body';
@@ -399,8 +502,79 @@ document.addEventListener('DOMContentLoaded', function () {
             domainsList.forEach(d => {
                 // editable only for custom_domains
                 const isCustom = (category.id === 'custom_domains');
-                const row = createDomainRow(d, true, isCustom);
+                // pass category enabled as defaultChecked so string-domain entries inherit it
+                const row = createDomainRow(d, !!category.enabled, isCustom);
                 domainsContainer.appendChild(row);
+            });
+
+            // Determine category checkbox state from domain checkboxes if domains exist
+            (function syncCategoryToggleState() {
+                try {
+                    const rows = Array.from(domainsContainer.querySelectorAll('.domain-row'));
+                    if (rows.length === 0) {
+                        // no domains: for custom category disable the checkbox, otherwise
+                        // fall back to category.enabled
+                        if (category.id === 'custom_domains') {
+                            toggle.checked = false;
+                            toggle.indeterminate = false;
+                            toggle.disabled = true;
+                        } else {
+                            toggle.checked = !!category.enabled;
+                            toggle.indeterminate = false;
+                            toggle.disabled = false;
+                        }
+                        return;
+                    }
+                    let total = 0, enabledCount = 0;
+                    rows.forEach(r => {
+                        const cb = r.querySelector('.domain-enabled');
+                        if (!cb) return;
+                        total += 1;
+                        if (cb.checked) enabledCount += 1;
+                    });
+                    if (enabledCount === 0) {
+                        toggle.checked = false;
+                        toggle.indeterminate = false;
+                    } else if (enabledCount === total) {
+                        toggle.checked = true;
+                        toggle.indeterminate = false;
+                    } else {
+                        toggle.checked = false;
+                        toggle.indeterminate = true;
+                    }
+                } catch (e) { /* ignore */ }
+            })();
+
+            // Update category checkbox when any domain checkbox changes
+            domainsContainer.addEventListener('change', (e) => {
+                try {
+                    const rows = Array.from(domainsContainer.querySelectorAll('.domain-row'));
+                    let total = 0, enabledCount = 0;
+                    rows.forEach(r => {
+                        const cb = r.querySelector('.domain-enabled');
+                        if (!cb) return;
+                        total += 1;
+                        if (cb.checked) enabledCount += 1;
+                    });
+                    // when there are no rows, custom category checkbox should be disabled
+                    if (rows.length === 0 && category.id === 'custom_domains') {
+                        toggle.checked = false;
+                        toggle.indeterminate = false;
+                        toggle.disabled = true;
+                    } else if (enabledCount === 0) {
+                        toggle.checked = false;
+                        toggle.indeterminate = false;
+                        toggle.disabled = false;
+                    } else if (enabledCount === total) {
+                        toggle.checked = true;
+                        toggle.indeterminate = false;
+                        toggle.disabled = false;
+                    } else {
+                        toggle.checked = false;
+                        toggle.indeterminate = true;
+                        toggle.disabled = false;
+                    }
+                } catch (e) { /* ignore */ }
             });
 
             // only custom category has add button and editable inputs
@@ -412,6 +586,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 addBtn.addEventListener('click', () => {
                     const newRow = createDomainRow('', true, true);
                     domainsContainer.appendChild(newRow);
+                    // trigger change on the newly added checkbox so the category state updates
+                    try {
+                        const cb = newRow.querySelector('.domain-enabled');
+                        if (cb) cb.dispatchEvent(new Event('change', { bubbles: true }));
+                    } catch (e) { }
                 });
                 // small gap between title and first domain
                 domainsContainer.style.marginTop = '6px';
@@ -437,10 +616,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             });
 
-            // when toggling category enabled, do not auto-expand/collapse body; only update arrow state
-            toggle.addEventListener('change', () => {
-                arrow.textContent = toggle.checked ? '▾' : '▸';
-            });
+            // when toggling category enabled, do not auto-expand/collapse body;
+            // do not change the arrow direction here — header clicks control collapse.
         });
     }
 
@@ -499,8 +676,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (importLabel) importLabel.textContent = t('import_config');
             if (resetLabel) resetLabel.textContent = t('reset_defaults');
             if (saveLabel) saveLabel.textContent = t('save_label');
-            if (forceDefaultsBtn) forceDefaultsBtn.textContent = '🔄 ' + (t('force_defaults') || 'Force defaults');
-            if (revertBackupBtn) revertBackupBtn.textContent = '⤺ ' + (t('revert_backup') || 'Revert backup');
+
             // set version label from manifest
             try {
                 const v = (chrome.runtime && chrome.runtime.getManifest) ? chrome.runtime.getManifest().version : null;
@@ -523,6 +699,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (catTitleEl) catTitleEl.textContent = ('⚙️ ' + (chrome.i18n.getMessage('options_title') || 'Categories'));
             } catch (e) { }
 
+            currentConfig = cfg;
             renderCategories(cfg);
 
             // Developer i18n key check: enable by setting localStorage.wp_dev_i18n_check = '1'
@@ -562,10 +739,20 @@ document.addEventListener('DOMContentLoaded', function () {
                             reviewBtn.style.display = 'inline-block';
                             reviewBtn.textContent = 'Dismiss';
                         }
+                        // update UI data version immediately
+                        try {
+                            DEFAULTS_VERSION = localRes.version;
+                            const dataVersionLabel = document.getElementById('data-version-label');
+                            if (dataVersionLabel) dataVersionLabel.textContent = DEFAULTS_VERSION;
+                        } catch (e) { }
                         banner.style.display = 'block';
                         if (reviewBtn) {
                             reviewBtn.onclick = () => {
-                                // dismiss only
+                                // dismiss and ensure data version label shows applied version
+                                try {
+                                    const dataVersionLabel = document.getElementById('data-version-label');
+                                    if (dataVersionLabel) dataVersionLabel.textContent = DEFAULTS_VERSION;
+                                } catch (e) { }
                                 banner.style.display = 'none';
                             };
                         }
@@ -584,9 +771,18 @@ document.addEventListener('DOMContentLoaded', function () {
                                 reviewBtn.style.display = 'inline-block';
                                 reviewBtn.textContent = 'Dismiss';
                             }
+                            // update UI data version immediately
+                            try {
+                                DEFAULTS_VERSION = res.version;
+                                const dataVersionLabel = document.getElementById('data-version-label');
+                                if (dataVersionLabel) dataVersionLabel.textContent = DEFAULTS_VERSION;
+                            } catch (e) { }
                             banner.style.display = 'block';
                             if (reviewBtn) {
-                                reviewBtn.onclick = () => { banner.style.display = 'none'; };
+                                reviewBtn.onclick = () => {
+                                    try { const dataVersionLabel = document.getElementById('data-version-label'); if (dataVersionLabel) dataVersionLabel.textContent = DEFAULTS_VERSION; } catch (e) { }
+                                    banner.style.display = 'none';
+                                };
                             }
                         }
                     }
@@ -630,54 +826,7 @@ document.addEventListener('DOMContentLoaded', function () {
         };
     }
 
-    // Force defaults: apply bundled defaults immediately then fetch remote
-    if (forceDefaultsBtn) {
-        forceDefaultsBtn.addEventListener('click', async () => {
-            try {
-                // apply local bundled defaults
-                const local = { defaultsVersion: DEFAULTS_VERSION, categories: defaultConfig.categories };
-                const localRes = await mergeDefaultsAndSave(local);
-                if (localRes && localRes.applied) showToast(t('defaults_applied') || 'Local defaults applied', 4000, 'info');
-                // then attempt remote
-                const remoteRes = await fetchAndApplyRemoteDefaultsIfAny();
-                if (remoteRes && remoteRes.version) showToast(t('defaults_applied_remote') || ('Remote defaults applied: ' + remoteRes.version), 4000, 'info');
-                if ((!localRes || !localRes.applied) && (!remoteRes || !remoteRes.applied)) showToast(t('defaults_no_change') || 'No defaults changes', 3000, 'info');
-                loadConfig();
-            } catch (e) {
-                showToast(t('defaults_error') || 'Defaults check failed', 3500, 'error');
-            }
-        });
-    }
 
-    // Revert to last backup
-    if (revertBackupBtn) {
-        revertBackupBtn.addEventListener('click', () => {
-            try {
-                const backupsIndexKey = 'webPurgeConfig_backups';
-                chrome.storage.local.get(backupsIndexKey, (res) => {
-                    const index = (res && res[backupsIndexKey]) ? res[backupsIndexKey] : [];
-                    if (!index || index.length === 0) {
-                        showToast(t('no_backups') || 'No backups available', 3000, 'error');
-                        return;
-                    }
-                    const lastKey = index[index.length - 1];
-                    chrome.storage.local.get(lastKey, (r2) => {
-                        const backup = r2 && r2[lastKey];
-                        if (!backup) {
-                            showToast(t('backup_missing') || 'Backup not found', 3000, 'error');
-                            return;
-                        }
-                        chrome.storage.sync.set({ webPurgeConfig: backup }, () => {
-                            showToast(t('backup_restored') || 'Backup restored', 3000, 'success');
-                            loadConfig();
-                        });
-                    });
-                });
-            } catch (e) {
-                showToast(t('backup_error') || 'Could not restore backup', 3000, 'error');
-            }
-        });
-    }
 
     form.addEventListener('submit', function (e) {
         e.preventDefault();
@@ -728,8 +877,16 @@ document.addEventListener('DOMContentLoaded', function () {
 
     resetButton.addEventListener('click', async function () {
         try {
-            const localDefaults = { defaultsVersion: (defaultConfig && defaultConfig.version) ? defaultConfig.version : DEFAULTS_VERSION, categories: (defaultConfig && defaultConfig.categories) ? defaultConfig.categories : [] };
-            await mergeDefaultsAndSave(localDefaults);
+            // Replace the stored config with the canonical bundled defaults (force reset)
+            const cfg = JSON.parse(JSON.stringify(defaultConfig || { version: DEFAULTS_VERSION || 1, categories: [] }));
+            await new Promise(resolve => chrome.storage.sync.set({ webPurgeConfig: cfg }, resolve));
+            // update applied defaults meta to reflect the bundled version
+            const ver = cfg.version || DEFAULTS_VERSION || null;
+            if (ver) {
+                await new Promise(resolve => chrome.storage.local.set({ defaultsMeta: { appliedDefaultsVersion: ver, lastDefaultsFetchTime: Date.now() } }, resolve));
+                DEFAULTS_VERSION = ver;
+                try { const dataVersionLabel = document.getElementById('data-version-label'); if (dataVersionLabel) dataVersionLabel.textContent = DEFAULTS_VERSION; } catch (e) { }
+            }
             showToast(t('reset_defaults') || 'Defaults restored', 3000, 'success');
             loadConfig();
         } catch (e) {

@@ -65,7 +65,7 @@ else
       # allow setting language via CHROME_LANG (e.g. en-US, pt-BR)
       CHROME_LANG_ARG=""
       if [ -n "${CHROME_LANG:-}" ]; then
-        CHROME_LANG_ARG="--lang=${CHROME_LANG}"
+        CHROME_LANG_ARG="--lang=${CHROME_LANG} --accept-lang=${CHROME_LANG}"
       fi
       exec "$CHROME_BIN" \
         --user-data-dir="$PROFILE_DIR" \
@@ -79,7 +79,7 @@ else
   fi
   CHROME_LANG_ARG=""
   if [ -n "${CHROME_LANG:-}" ]; then
-    CHROME_LANG_ARG="--lang=${CHROME_LANG}"
+    CHROME_LANG_ARG="--lang=${CHROME_LANG} --accept-lang=${CHROME_LANG}"
   fi
   exec "$CHROME_BIN" \
     --user-data-dir="$PROFILE_DIR" \

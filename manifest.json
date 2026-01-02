@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Web Purge",
-  "version": "0.1.3",
+  "version": "0.2.1",
   "description": "A privacy utility browser extension that removes all browser data associated with configured target websites.",
   "permissions": [
     "browsingData",
