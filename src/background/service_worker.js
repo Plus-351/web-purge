@@ -140,9 +140,14 @@ function ensureDefaultsAlarm() {
 chrome.alarms.onAlarm.addListener((alarm) => {
     if (!alarm || alarm.name !== DEFAULTS_CHECK_ALARM) return;
     // try remote fetch
-    fetchAndApplyDefaultsUrl('https://Plus-351.github.io/web-purge/web-purge-defaults.json').then(res => {
-        if (res && res.applied) console.info('Periodic defaults applied', res.version);
-    }).catch(() => { /* ignore */ });
+    try {
+        chrome.storage.local.get('remoteDefaultsUrl', (r) => {
+            const url = (r && r.remoteDefaultsUrl) ? r.remoteDefaultsUrl : 'https://Plus-351.github.io/web-purge/web-purge-defaults.json';
+            fetchAndApplyDefaultsUrl(url).then(res => {
+                if (res && res.applied) console.info('Periodic defaults applied', res.version);
+            }).catch(() => { /* ignore */ });
+        });
+    } catch (e) { /* ignore */ }
 });
 
 // Run checks on install/update and on startup
@@ -162,7 +167,12 @@ chrome.runtime.onInstalled.addListener(async (details) => {
 
         // on update/install, ensure alarm exists and run a remote check immediately
         ensureDefaultsAlarm();
-        fetchAndApplyDefaultsUrl('https://Plus-351.github.io/web-purge/web-purge-defaults.json').then(() => {}).catch(() => {});
+        try {
+            chrome.storage.local.get('remoteDefaultsUrl', (r) => {
+                const url = (r && r.remoteDefaultsUrl) ? r.remoteDefaultsUrl : 'https://Plus-351.github.io/web-purge/web-purge-defaults.json';
+                fetchAndApplyDefaultsUrl(url).then(() => {}).catch(() => {});
+            });
+        } catch (e) {}
     } catch (e) { /* ignore */ }
 });
 
@@ -170,7 +180,12 @@ chrome.runtime.onStartup.addListener(async () => {
     try {
         ensureDefaultsAlarm();
         // run a quick remote check on startup (non-blocking)
-        fetchAndApplyDefaultsUrl('https://Plus-351.github.io/web-purge/web-purge-defaults.json').then(() => {}).catch(() => {});
+        try {
+            chrome.storage.local.get('remoteDefaultsUrl', (r) => {
+                const url = (r && r.remoteDefaultsUrl) ? r.remoteDefaultsUrl : 'https://Plus-351.github.io/web-purge/web-purge-defaults.json';
+                fetchAndApplyDefaultsUrl(url).then(() => {}).catch(() => {});
+            });
+        } catch (e) {}
     } catch (e) { /* ignore */ }
 });
 

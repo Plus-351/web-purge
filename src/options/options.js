@@ -6,6 +6,8 @@ document.addEventListener('DOMContentLoaded', function () {
     const importButton = document.getElementById('import-config-btn');
     const importInput = document.getElementById('import-config');
     const resetButton = document.getElementById('reset-defaults');
+    const forceDefaultsBtn = document.getElementById('force-defaults');
+    const revertBackupBtn = document.getElementById('revert-backup');
     const form = document.getElementById('options-form');
     const saveLabel = document.getElementById('save-label');
     const exportLabel = document.getElementById('export-label');
@@ -36,6 +38,14 @@ document.addEventListener('DOMContentLoaded', function () {
                 ui: (data.ui || { showSensitiveCategory: true }),
                 categories: (data.categories || [])
             };
+            // ensure remoteDefaultsUrl is available in storage.local for the service worker
+            try {
+                chrome.storage.local.get('remoteDefaultsUrl', function (res) {
+                    if (!res || !res.remoteDefaultsUrl) {
+                        chrome.storage.local.set({ remoteDefaultsUrl: REMOTE_DEFAULTS_URL });
+                    }
+                });
+            } catch (e) { }
             return defaultConfig;
         }).catch(err => {
             // fallback minimal defaults
@@ -478,6 +488,55 @@ document.addEventListener('DOMContentLoaded', function () {
             },
             categories
         };
+    }
+
+    // Force defaults: apply bundled defaults immediately then fetch remote
+    if (forceDefaultsBtn) {
+        forceDefaultsBtn.addEventListener('click', async () => {
+            try {
+                // apply local bundled defaults
+                const local = { defaultsVersion: DEFAULTS_VERSION, categories: defaultConfig.categories };
+                const localRes = await mergeDefaultsAndSave(local);
+                if (localRes && localRes.applied) showToast(t('defaults_applied') || 'Local defaults applied', 4000, 'info');
+                // then attempt remote
+                const remoteRes = await fetchAndApplyRemoteDefaultsIfAny();
+                if (remoteRes && remoteRes.applied) showToast(t('defaults_applied_remote') || ('Remote defaults applied: ' + remoteRes.version), 4000, 'info');
+                if ((!localRes || !localRes.applied) && (!remoteRes || !remoteRes.applied)) showToast(t('defaults_no_change') || 'No defaults changes', 3000, 'info');
+                loadConfig();
+            } catch (e) {
+                showToast(t('defaults_error') || 'Defaults check failed', 3500, 'error');
+            }
+        });
+    }
+
+    // Revert to last backup
+    if (revertBackupBtn) {
+        revertBackupBtn.addEventListener('click', () => {
+            try {
+                const backupsIndexKey = 'webPurgeConfig_backups';
+                chrome.storage.local.get(backupsIndexKey, (res) => {
+                    const index = (res && res[backupsIndexKey]) ? res[backupsIndexKey] : [];
+                    if (!index || index.length === 0) {
+                        showToast(t('no_backups') || 'No backups available', 3000, 'error');
+                        return;
+                    }
+                    const lastKey = index[index.length - 1];
+                    chrome.storage.local.get(lastKey, (r2) => {
+                        const backup = r2 && r2[lastKey];
+                        if (!backup) {
+                            showToast(t('backup_missing') || 'Backup not found', 3000, 'error');
+                            return;
+                        }
+                        chrome.storage.sync.set({ webPurgeConfig: backup }, () => {
+                            showToast(t('backup_restored') || 'Backup restored', 3000, 'success');
+                            loadConfig();
+                        });
+                    });
+                });
+            } catch (e) {
+                showToast(t('backup_error') || 'Could not restore backup', 3000, 'error');
+            }
+        });
     }
 
     form.addEventListener('submit', function (e) {
