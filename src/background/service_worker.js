@@ -155,7 +155,7 @@ chrome.alarms.onAlarm.addListener((alarm) => {
                         if (url) fetchAndApplyDefaultsUrl(url).then(res => {
                             if (res && res.applied) console.info('Periodic defaults applied', res.version);
                         }).catch(() => { /* ignore */ });
-                    }).catch(() => {});
+                    }).catch(() => { });
                 } catch (e) { }
             }
         });
@@ -181,21 +181,21 @@ chrome.runtime.onInstalled.addListener(async (details) => {
         ensureDefaultsAlarm();
         try {
             chrome.storage.local.get('remoteDefaultsUrl', (r) => {
-                    const maybe = (r && r.remoteDefaultsUrl) ? r.remoteDefaultsUrl : null;
-                    if (maybe) {
-                        fetchAndApplyDefaultsUrl(maybe).then(() => {}).catch(() => {});
-                    } else {
-                        // try reading shared defaults-config.json
-                        try {
-                            const cfgUrl = chrome.runtime.getURL('src/shared/defaults-config.json');
-                            fetch(cfgUrl).then(rr => rr.ok ? rr.json() : null).then(cfgData => {
-                                const url = cfgData && cfgData.fallbackUrl ? cfgData.fallbackUrl : null;
-                                if (url) fetchAndApplyDefaultsUrl(url).then(() => {}).catch(() => {});
-                            }).catch(() => {});
-                        } catch (e) { }
-                    }
-                });
-        } catch (e) {}
+                const maybe = (r && r.remoteDefaultsUrl) ? r.remoteDefaultsUrl : null;
+                if (maybe) {
+                    fetchAndApplyDefaultsUrl(maybe).then(() => { }).catch(() => { });
+                } else {
+                    // try reading shared defaults-config.json
+                    try {
+                        const cfgUrl = chrome.runtime.getURL('src/shared/defaults-config.json');
+                        fetch(cfgUrl).then(rr => rr.ok ? rr.json() : null).then(cfgData => {
+                            const url = cfgData && cfgData.fallbackUrl ? cfgData.fallbackUrl : null;
+                            if (url) fetchAndApplyDefaultsUrl(url).then(() => { }).catch(() => { });
+                        }).catch(() => { });
+                    } catch (e) { }
+                }
+            });
+        } catch (e) { }
     } catch (e) { /* ignore */ }
 });
 
@@ -205,20 +205,20 @@ chrome.runtime.onStartup.addListener(async () => {
         // run a quick remote check on startup (non-blocking)
         try {
             chrome.storage.local.get('remoteDefaultsUrl', (r) => {
-                    const maybe = (r && r.remoteDefaultsUrl) ? r.remoteDefaultsUrl : null;
-                    if (maybe) {
-                        fetchAndApplyDefaultsUrl(maybe).then(() => {}).catch(() => {});
-                    } else {
-                        try {
-                            const cfgUrl = chrome.runtime.getURL('src/shared/defaults-config.json');
-                            fetch(cfgUrl).then(rr => rr.ok ? rr.json() : null).then(cfgData => {
-                                const url = cfgData && cfgData.fallbackUrl ? cfgData.fallbackUrl : null;
-                                if (url) fetchAndApplyDefaultsUrl(url).then(() => {}).catch(() => {});
-                            }).catch(() => {});
-                        } catch (e) { }
-                    }
-                });
-        } catch (e) {}
+                const maybe = (r && r.remoteDefaultsUrl) ? r.remoteDefaultsUrl : null;
+                if (maybe) {
+                    fetchAndApplyDefaultsUrl(maybe).then(() => { }).catch(() => { });
+                } else {
+                    try {
+                        const cfgUrl = chrome.runtime.getURL('src/shared/defaults-config.json');
+                        fetch(cfgUrl).then(rr => rr.ok ? rr.json() : null).then(cfgData => {
+                            const url = cfgData && cfgData.fallbackUrl ? cfgData.fallbackUrl : null;
+                            if (url) fetchAndApplyDefaultsUrl(url).then(() => { }).catch(() => { });
+                        }).catch(() => { });
+                    } catch (e) { }
+                }
+            });
+        } catch (e) { }
     } catch (e) { /* ignore */ }
 });
 

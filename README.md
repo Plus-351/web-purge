@@ -50,11 +50,11 @@ Notes:
 
 - Remote defaults: The extension can fetch updated category/domain defaults from a remote JSON. Set the `remoteDefaultsUrl` field in `src/options/options.json` to the public URL that serves the defaults JSON (the file must include `defaultsVersion` and `categories`). The options page will fetch and merge updates non-destructively and notify users when defaults change.
 - Privacy policy on GitHub Pages: you can host `PRIVACY.md` via GitHub Pages and use that public URL in the Chrome Web Store listing. Quick steps:
-	1. Create a `docs/` directory in the repo and copy `PRIVACY.md` into `docs/index.md` (or `docs/PRIVACY.md`).
-	2. In GitHub repo Settings → Pages, set Source to `main` branch `/docs` folder and save.
-	3. After a minute the site will be available at `https://<your-username>.github.io/<repo>/` — use the direct URL to the privacy page in the store listing.
+ 1. Create a `docs/` directory in the repo and copy `PRIVACY.md` into `docs/index.md` (or `docs/PRIVACY.md`).
+ 2. In GitHub repo Settings → Pages, set Source to `main` branch `/docs` folder and save.
+ 3. After a minute the site will be available at `https://<your-username>.github.io/<repo>/` — use the direct URL to the privacy page in the store listing.
 
-	Alternatively you can enable Pages from the root or use a `gh-pages` branch; hosting on GitHub Pages provides a stable HTTPS URL suitable for the Chrome Web Store privacy policy field.
+ Alternatively you can enable Pages from the root or use a `gh-pages` branch; hosting on GitHub Pages provides a stable HTTPS URL suitable for the Chrome Web Store privacy policy field.
 
 Note about `docs/`: This repository contains a `docs/` folder with `web-purge-defaults.json` (a copy of the current `src/options/options.json` defaults) and the privacy page. You can publish these files using GitHub Pages by enabling Pages for the `main` branch and selecting the `/docs` folder as the source. Once published, the defaults JSON will be available at:
 
