@@ -16,7 +16,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Remote defaults configuration (kept here so repo defaults JSON remains data-only)
     const REMOTE_DEFAULTS_URL = 'https://Plus-351.github.io/web-purge/web-purge-defaults.json';
-    const DEFAULTS_VERSION = '1.0.0';
+    // DEFAULTS_VERSION will be derived after loading the local JSON or from stored applied defaults.
+    let DEFAULTS_VERSION = null;
 
     // `defaultConfig` will be loaded from `src/options/options.json` at runtime.
     let defaultConfig = null;
@@ -411,7 +412,7 @@ document.addEventListener('DOMContentLoaded', function () {
             renderCategories(cfg);
             // after render, first apply local defaults (from bundled options.json) if its version changed,
             // then fetch remote defaults and apply if any. Both use the same merge helper.
-            const localDefaults = { defaultsVersion: DEFAULTS_VERSION, categories: defaultConfig.categories };
+            const localDefaults = { defaultsVersion: (defaultConfig && defaultConfig.version) ? defaultConfig.version : DEFAULTS_VERSION, categories: defaultConfig.categories };
             mergeDefaultsAndSave(localDefaults).then(localRes => {
                 if (localRes && localRes.applied) {
                     try { showToast(`Defaults updated to ${localRes.version}`, 5000, 'info'); } catch (e) { }
@@ -537,8 +538,23 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // resize UI removed — use dev-run script flags
 
-    // Load the default config from JSON, then render UI from stored config or defaults
-    loadDefaultConfigFromJson().then(() => {
+    // Load the default config from JSON, then determine defaults version and render UI
+    loadDefaultConfigFromJson().then(async () => {
+        try {
+            const meta = await new Promise(resolve => chrome.storage.local.get('defaultsMeta', res => resolve(res.defaultsMeta || {})));
+            const applied = meta.appliedDefaultsVersion || null;
+            if (applied) {
+                DEFAULTS_VERSION = applied;
+            } else if (defaultConfig && defaultConfig.version) {
+                DEFAULTS_VERSION = defaultConfig.version;
+            } else {
+                try {
+                    DEFAULTS_VERSION = (chrome.runtime && chrome.runtime.getManifest) ? chrome.runtime.getManifest().version : '1.0.0';
+                } catch (e) { DEFAULTS_VERSION = '1.0.0'; }
+            }
+        } catch (e) {
+            try { DEFAULTS_VERSION = (chrome.runtime && chrome.runtime.getManifest) ? chrome.runtime.getManifest().version : '1.0.0'; } catch (e) { DEFAULTS_VERSION = '1.0.0'; }
+        }
         loadConfig();
     });
 });
