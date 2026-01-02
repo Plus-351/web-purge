@@ -409,22 +409,38 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (versionLabel) versionLabel.textContent = v ? ("Version: " + v) : '';
             } catch (e) { }
             renderCategories(cfg);
-            // after render, attempt to fetch remote defaults and apply if any
-            fetchAndApplyRemoteDefaultsIfAny().then(res => {
-                if (res && res.applied) {
-                    // notify user to review changes
-                    try { showToast(`Defaults updated to ${res.version}`, 5000, 'info'); } catch (e) { }
+            // after render, first apply local defaults (from bundled options.json) if its version changed,
+            // then fetch remote defaults and apply if any. Both use the same merge helper.
+            const localDefaults = { defaultsVersion: DEFAULTS_VERSION, categories: defaultConfig.categories };
+            mergeDefaultsAndSave(localDefaults).then(localRes => {
+                if (localRes && localRes.applied) {
+                    try { showToast(`Defaults updated to ${localRes.version}`, 5000, 'info'); } catch (e) { }
                     const banner = document.getElementById('defaults-banner');
                     const bannerText = document.getElementById('defaults-banner-text');
                     const reviewBtn = document.getElementById('defaults-banner-review');
                     if (banner && bannerText) {
-                        bannerText.textContent = `Defaults have been updated to ${res.version}.`;
+                        bannerText.textContent = `Defaults have been updated to ${localRes.version}.`;
                         if (reviewBtn) reviewBtn.style.display = 'inline-block';
                         banner.style.display = 'block';
                         reviewBtn.addEventListener('click', () => { loadConfig(); banner.style.display = 'none'; });
                     }
                 }
-            }).catch(() => { /* ignore */ });
+            }).catch(() => { /* ignore */ }).finally(() => {
+                fetchAndApplyRemoteDefaultsIfAny().then(res => {
+                    if (res && res.applied) {
+                        try { showToast(`Defaults updated to ${res.version}`, 5000, 'info'); } catch (e) { }
+                        const banner = document.getElementById('defaults-banner');
+                        const bannerText = document.getElementById('defaults-banner-text');
+                        const reviewBtn = document.getElementById('defaults-banner-review');
+                        if (banner && bannerText) {
+                            bannerText.textContent = `Defaults have been updated to ${res.version}.`;
+                            if (reviewBtn) reviewBtn.style.display = 'inline-block';
+                            banner.style.display = 'block';
+                            reviewBtn.addEventListener('click', () => { loadConfig(); banner.style.display = 'none'; });
+                        }
+                    }
+                }).catch(() => { /* ignore */ });
+            });
         });
     }
 
