@@ -87,7 +87,4 @@
     "ui": {
         "showSensitiveCategory": true
     }
-    ,
-    "defaultsVersion": "1.0.0",
-    "remoteDefaultsUrl": "https://Plus-351.github.io/web-purge/web-purge-defaults.json"
 }

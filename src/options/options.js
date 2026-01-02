@@ -14,6 +14,10 @@ document.addEventListener('DOMContentLoaded', function () {
     const addDomainText = chrome.i18n.getMessage('add_domain') || 'Add domain';
     // resize UI removed per user request
 
+    // Remote defaults configuration (kept here so repo defaults JSON remains data-only)
+    const REMOTE_DEFAULTS_URL = 'https://Plus-351.github.io/web-purge/web-purge-defaults.json';
+    const DEFAULTS_VERSION = '1.0.0';
+
     // `defaultConfig` will be loaded from `src/options/options.json` at runtime.
     let defaultConfig = null;
 
@@ -24,8 +28,9 @@ document.addEventListener('DOMContentLoaded', function () {
             return r.json();
         }).then(data => {
             defaultConfig = {
-                version: data.defaultsVersion || 1,
-                remoteDefaultsUrl: data.remoteDefaultsUrl || '',
+                version: data.version || 1,
+                // remoteDefaultsUrl and defaultsVersion are now constants in options.js
+                remoteDefaultsUrl: REMOTE_DEFAULTS_URL,
                 behavior: (data.behavior || { autoCleanOnStartup: false, historyLookbackDays: 7 }),
                 ui: (data.ui || { showSensitiveCategory: true }),
                 categories: (data.categories || [])
@@ -46,11 +51,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Fetch remote defaults if configured and merge non-destructively with user config
     async function fetchAndApplyRemoteDefaultsIfAny() {
-        try {
-            if (!defaultConfig || !defaultConfig.remoteDefaultsUrl) return { applied: false };
-            const url = defaultConfig.remoteDefaultsUrl;
+            try {
+                const url = REMOTE_DEFAULTS_URL || (defaultConfig && defaultConfig.remoteDefaultsUrl);
+                if (!url) return { applied: false };
             // placeholder check
-            if (url.indexOf('YOUR_HOST') !== -1) return { applied: false };
+                if (url.indexOf('YOUR_HOST') !== -1) return { applied: false };
 
             const resp = await fetch(url, { cache: 'no-cache' });
             if (!resp.ok) return { applied: false };
