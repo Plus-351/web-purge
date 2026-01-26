@@ -1,62 +1,859 @@
 <!doctype html>
-<html lang="en">
-
+<html lang="es">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>Web Purge</title>
-    <style>
-        body {
-            font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
-            margin: 40px;
-            color: #111
-        }
+  <meta charset="utf-8">
+  <title>Web Purge – Site-specific data cleaner</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description"
+        content="Web Purge cleans cookies, cache and other site data for specific domains with one click, without wiping your entire history or raising suspicion.">
+  <style>
+    :root {
+      --bg: #f3f4f6;
+      --card-bg: #ffffff;
+      --border: #e5e7eb;
+      --border-strong: #d1d5db;
+      --text-main: #111827;
+      --text-muted: #6b7280;
+      --accent: #0f766e;
+      --accent-soft: rgba(15, 118, 110, 0.08);
+      --radius-lg: 20px;
+      --radius-md: 14px;
+      --shadow-soft: 0 14px 40px rgba(15, 23, 42, 0.08);
+    }
 
-        h1 {
-            font-size: 1.8rem
-        }
+    * {
+      box-sizing: border-box;
+    }
 
-        a {
-            color: #0366d6
-        }
-    </style>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
+                   "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top, #ffffff 0, var(--bg) 55%, #e5e7eb 100%);
+      color: var(--text-main);
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+    }
+
+    .page {
+      width: 100%;
+      max-width: 720px;
+      padding: 32px 20px 40px;
+      margin: 0 auto;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-soft);
+      padding: 24px 20px 18px;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background:
+        radial-gradient(circle at 15% 15%, #facc15 0, transparent 40%),
+        radial-gradient(circle at 85% 85%, #f97316 0, transparent 40%),
+        linear-gradient(135deg, #0f172a, #111827);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 8px 18px rgba(15, 23, 42, 0.25);
+    }
+
+    .logo::after {
+      content: "";
+      position: absolute;
+      inset: 18%;
+      border-radius: 12px;
+      border: 1px solid rgba(248, 250, 252, 0.7);
+      box-shadow:
+        0 0 0 1px rgba(15, 23, 42, 0.9),
+        0 0 18px rgba(250, 204, 21, 0.35);
+    }
+
+    .logo-sweep {
+      width: 140%;
+      height: 26%;
+      border-radius: 999px;
+      background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(248, 250, 252, 0.95),
+        rgba(250, 204, 21, 0.95),
+        transparent
+      );
+      transform: rotate(-22deg) translateY(6px);
+      opacity: 0.9;
+      filter: blur(0.2px);
+    }
+
+    .brand-title {
+      font-size: 1.05rem;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+    }
+
+    .brand-sub {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .chip {
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      border: 1px solid #d1d5db;
+      color: var(--text-muted);
+      background: #f9fafb;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+    .chip-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: var(--accent);
+      box-shadow: 0 0 9px rgba(15, 118, 110, 0.7);
+    }
+
+    .lang-toggle {
+      display: inline-flex;
+      gap: 4px;
+      padding: 2px;
+      border-radius: 999px;
+      background: #f3f4f6;
+      border: 1px solid var(--border-strong);
+      font-size: 0.76rem;
+    }
+
+    .lang-btn {
+      border-radius: 999px;
+      padding: 4px 8px;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      color: var(--text-muted);
+      font-size: 0.76rem;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .lang-btn.active {
+      background: #ffffff;
+      color: var(--accent);
+      box-shadow: 0 0 0 1px var(--accent-soft);
+    }
+
+    .hero {
+      text-align: left;
+      margin-bottom: 18px;
+    }
+
+    .hero-title {
+      font-size: clamp(1.9rem, 4vw, 2.2rem);
+      line-height: 1.15;
+      margin: 4px 0 8px;
+    }
+
+    .hero-title span {
+      color: var(--accent);
+      font-weight: 650;
+    }
+
+    .hero-subtitle {
+      color: var(--text-muted);
+      font-size: 0.98rem;
+      margin: 0 0 14px;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .btn {
+      border-radius: 999px;
+      padding: 8px 16px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      border: 1px solid transparent;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+      transition: all 0.15s ease-out;
+      white-space: nowrap;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #0f766e, #14b8a6);
+      color: #ecfdf5;
+      box-shadow:
+        0 10px 22px rgba(13, 148, 136, 0.35),
+        0 0 0 1px rgba(15, 23, 42, 0.06);
+    }
+
+    .btn-primary:hover {
+      filter: brightness(1.04);
+      transform: translateY(-1px);
+      box-shadow:
+        0 14px 32px rgba(13, 148, 136, 0.45),
+        0 0 0 1px rgba(15, 23, 42, 0.1);
+    }
+
+    .btn-secondary {
+      background: #f9fafb;
+      color: var(--text-main);
+      border-color: rgba(148, 163, 184, 0.7);
+    }
+
+    .btn-secondary:hover {
+      border-color: rgba(55, 65, 81, 0.75);
+      background: #ffffff;
+    }
+
+    .hero-meta {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      border-radius: 999px;
+      background: #f9fafb;
+      border: 1px solid var(--border);
+      padding: 7px 12px;
+    }
+
+    .pill-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 16px;
+    }
+
+    .pill {
+      border-radius: 999px;
+      padding: 5px 10px;
+      border: 1px solid var(--border-strong);
+      background: #f9fafb;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+    }
+
+    .pill-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(148, 163, 184, 0.9);
+    }
+
+    .pill-dot.accent {
+      background: var(--accent);
+      box-shadow: 0 0 8px rgba(15, 118, 110, 0.7);
+    }
+
+    .section {
+      margin-top: 18px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+    }
+
+    .section-title {
+      font-size: 0.96rem;
+      font-weight: 600;
+      margin: 0 0 6px;
+    }
+
+    .section-text {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      margin: 0 0 10px;
+    }
+
+    .section-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-size: 0.87rem;
+      color: var(--text-main);
+    }
+
+    .section-list li::before {
+      content: "•";
+      margin-right: 6px;
+      color: var(--accent);
+    }
+
+    .tag-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 6px;
+      font-size: 0.78rem;
+    }
+
+    .tag {
+      padding: 3px 9px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: #f9fafb;
+      color: var(--text-muted);
+    }
+
+    .section small {
+      font-size: 0.76rem;
+      color: var(--text-muted);
+    }
+
+    .links-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-size: 0.86rem;
+    }
+
+    .footer {
+      margin-top: 16px;
+      font-size: 0.76rem;
+      color: var(--text-muted);
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 10px;
+      padding-top: 10px;
+      border-top: 1px solid var(--border);
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    .lang-section {
+      display: none;
+    }
+
+    .lang-section.active {
+      display: block;
+    }
+
+    @media (max-width: 640px) {
+      header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+      }
+      .card {
+        padding: 20px 16px 16px;
+      }
+      .lang-toggle {
+        align-self: flex-start;
+      }
+    }
+  </style>
 </head>
-
 <body>
-    <div class="store-description">
-        <h1>Web Purge</h1>
-        <p><strong>Quickly remove cookies, local storage, cache and other site data for the current domain or groups of
-                domains.</strong></p>
+  <main class="page">
+    <div class="card">
+      <header>
+        <div class="brand">
+          <div class="logo">
+            <div class="logo-sweep"></div>
+          </div>
+          <div>
+            <div class="brand-title">Web Purge</div>
+            <div class="brand-sub" data-i18n-brand-sub-es>
+              Extensión de privacidad para limpieza selectiva de datos.
+            </div>
+            <div class="brand-sub" data-i18n-brand-sub-en style="display:none;">
+              Privacy extension for site-specific data cleanup.
+            </div>
+            <div class="brand-sub" data-i18n-brand-sub-pt style="display:none;">
+              Extensão de privacidade para limpeza seletiva de dados.
+            </div>
+          </div>
+        </div>
+        <div>
+          <div class="chip" data-i18n-chip-es>
+            <span class="chip-dot"></span>
+            <span>Cliente local · Sin servidores</span>
+          </div>
+          <div class="chip" data-i18n-chip-en style="display:none;">
+            <span class="chip-dot"></span>
+            <span>Local only · No servers</span>
+          </div>
+          <div class="chip" data-i18n-chip-pt style="display:none;">
+            <span class="chip-dot"></span>
+            <span>Somente local · Sem servidores</span>
+          </div>
+        </div>
+      </header>
 
-        <p>Web Purge is a lightweight privacy tool that lets you remove all browser data associated with specific
-            websites or predefined categories (trackers, ads, social networks, etc.). Use the popup for one‑click
-            cleanup
-            of the current site, or manage categories and custom domains from the Options page. All operations run
-            locally in your browser — no external servers.</p>
+      <div class="lang-toggle" aria-label="Language selector">
+        <button class="lang-btn active" data-lang="es">ES</button>
+        <button class="lang-btn" data-lang="en">EN</button>
+        <button class="lang-btn" data-lang="pt">PT</button>
+      </div>
 
-        <h2>Key features</h2>
-        <ul>
-            <li>One‑click cleanup for the active tab</li>
-            <li>Predefined category lists plus user custom domains</li>
-            <li>Add custom domains (created enabled by default)</li>
-            <li>Categories reflect partial/complete selection (indeterminate state)</li>
-            <li>Localizable UI (multiple languages supported)</li>
-            <li>Safe defaults and merge behavior on updates (user preferences preserved)</li>
-        </ul>
+      <!-- Español -->
+      <div class="lang-section active" id="lang-es">
+        <section class="hero">
+          <h1 class="hero-title">
+            Limpia tus rastros en la web <br><span>con un solo clic</span>
+          </h1>
+          <p class="hero-subtitle">
+            Elimina cookies, caché y otros datos de sitios específicos sin complicaciones.
+            Web Purge te da control rápido y seguro sobre lo que tu navegador recuerda.
+          </p>
+          <div class="hero-actions">
+            <a class="btn btn-primary"
+               href="https://chromewebstore.google.com/detail/web-purge/pjdkllkjifoeonnpncldkgcfjiajepjb"
+               target="_blank" rel="noreferrer">
+              Añadir a Chrome
+            </a>
+            <a class="btn btn-secondary"
+               href="https://github.com/plus-351/web-purge"
+               target="_blank" rel="noreferrer">
+              Ver código en GitHub
+            </a>
+          </div>
+          <div class="hero-meta">
+            En lugar de borrar todo el historial (algo que puede parecer sospechoso),
+            Web Purge limpia cookies, caché y otros datos solo de los dominios que tú elijas
+            y dentro del rango de tiempo que definas.
+          </div>
 
-        <h2>How it works</h2>
-        <p>The extension uses browser APIs to clear site-specific storage (cookies, localStorage, cache, etc.) for
-            selected origins. Settings are stored locally in browser storage and can be managed from the Options page.
-        </p>
+          <div class="pill-row">
+            <div class="pill">
+              <span class="pill-dot accent"></span>
+              <span>Un clic para limpiar el dominio de la pestaña activa</span>
+            </div>
+            <div class="pill">
+              <span class="pill-dot"></span>
+              <span>Listas de trackers, anuncios y redes sociales</span>
+            </div>
+            <div class="pill">
+              <span class="pill-dot"></span>
+              <span>Dominios personalizados creados habilitados por defecto</span>
+            </div>
+          </div>
+        </section>
 
-        <h2>Privacy</h2>
-        <p>Web Purge runs fully client-side and does not send your data to external services. Permissions are limited
-            to what's necessary to read settings and clear local site data. See the privacy page for details.</p>
+        <section class="section">
+          <h2 class="section-title">¿Qué hace Web Purge?</h2>
+          <p class="section-text">
+            Web Purge es una herramienta ligera de privacidad que borra datos del navegador
+            asociados a sitios concretos o grupos de dominios (trackers, anuncios, redes
+            sociales, etc.). Usa el popup para una limpieza rápida del sitio actual o
+            administra categorías y dominios personalizados desde la página de Opciones.[page:1]
+          </p>
+          <ul class="section-list">
+            <li>Limpieza con un clic para el dominio de la pestaña activa.[page:1]</li>
+            <li>Categorías predefinidas de trackers, anuncios, redes sociales y más.[page:1]</li>
+            <li>Dominios personalizados para adaptar la limpieza a tu flujo de trabajo.[page:1]</li>
+            <li>Estado parcial/indeterminado cuando solo parte de una categoría está activa.[page:1]</li>
+            <li>Interfaz localizable con soporte para múltiples idiomas.[page:1]</li>
+          </ul>
+        </section>
+
+        <section class="section">
+          <h2 class="section-title">¿Cómo funciona?</h2>
+          <p class="section-text">
+            La extensión utiliza las APIs del navegador para limpiar almacenamiento específico
+            de los sitios que selecciones (cookies, localStorage, caché y otros datos de sitio).
+            Las preferencias se guardan en el almacenamiento local del navegador y se respetan
+            durante las actualizaciones.[page:1]
+          </p>
+          <div class="tag-row">
+            <span class="tag">Sin cuentas</span>
+            <span class="tag">Sin telemetría</span>
+            <span class="tag">Sin servidores externos</span>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 class="section-title">Privacidad primero</h2>
+          <p class="section-text">
+            Borrar por completo el historial del navegador suele ser la reacción instintiva
+            cuando alguien quiere proteger su privacidad, pero ese comportamiento puede resultar
+            sospechoso y, aun así, no elimina todos los datos temporales ni la caché.[page:1]
+          </p>
+          <p class="section-text">
+            Web Purge funciona íntegramente del lado del cliente y te permite eliminar cookies,
+            almacenamiento local, caché y otros datos únicamente para los dominios que configures
+            y dentro del período de tiempo que definas, ofreciendo una limpieza profunda donde
+            importa sin vaciar todo tu historial.[page:1]
+          </p>
+          <small>
+            No recopilamos ni vendemos tu información personal. Para más detalles, consulta la
+            Política de privacidad.[page:1]
+          </small>
+        </section>
+
+        <section class="section">
+          <h2 class="section-title">Enlaces útiles</h2>
+          <ul class="links-list">
+            <li>
+              <a href="https://chromewebstore.google.com/detail/web-purge/pjdkllkjifoeonnpncldkgcfjiajepjb"
+                 target="_blank" rel="noreferrer">
+                Página de Web Purge en Chrome Web Store
+              </a>
+            </li>
+            <li>
+              <a href="https://plus-351.github.io/web-purge/terms.html"
+                 target="_blank" rel="noreferrer">
+                Términos de uso
+              </a>
+            </li>
+            <li>
+              <a href="https://plus-351.github.io/web-purge/privacy.html"
+                 target="_blank" rel="noreferrer">
+                Política de privacidad
+              </a>
+            </li>
+          </ul>
+        </section>
+      </div>
+
+      <!-- English -->
+      <div class="lang-section" id="lang-en">
+        <section class="hero">
+          <h1 class="hero-title">
+            Clean your web traces <br><span>with a single click</span>
+          </h1>
+          <p class="hero-subtitle">
+            Remove cookies, cache and other data for specific sites without hassle.
+            Web Purge gives you fast and safe control over what your browser remembers.[page:1]
+          </p>
+          <div class="hero-actions">
+            <a class="btn btn-primary"
+               href="https://chromewebstore.google.com/detail/web-purge/pjdkllkjifoeonnpncldkgcfjiajepjb"
+               target="_blank" rel="noreferrer">
+              Add to Chrome
+            </a>
+            <a class="btn btn-secondary"
+               href="https://github.com/plus-351/web-purge"
+               target="_blank" rel="noreferrer">
+              View code on GitHub
+            </a>
+          </div>
+          <div class="hero-meta">
+            Instead of wiping your entire browsing history (which can look suspicious),
+            Web Purge clears cookies, cache and other data only for the domains you choose
+            and within the time range you define.[page:1]
+          </div>
+
+          <div class="pill-row">
+            <div class="pill">
+              <span class="pill-dot accent"></span>
+              <span>One-click cleanup for the active tab's domain</span>
+            </div>
+            <div class="pill">
+              <span class="pill-dot"></span>
+              <span>Lists for trackers, ads and social networks</span>
+            </div>
+            <div class="pill">
+              <span class="pill-dot"></span>
+              <span>Custom domains created enabled by default</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 class="section-title">What does Web Purge do?</h2>
+          <p class="section-text">
+            Web Purge is a lightweight privacy tool that lets you remove all browser data
+            associated with specific websites or predefined categories (trackers, ads,
+            social networks, etc.). Use the popup for one‑click cleanup of the current site,
+            or manage categories and custom domains from the Options page.[page:1]
+          </p>
+          <ul class="section-list">
+            <li>One‑click cleanup for the active tab's domain.[page:1]</li>
+            <li>Predefined category lists plus custom user domains.[page:1]</li>
+            <li>New custom domains are created enabled by default.[page:1]</li>
+            <li>Categories reflect partial/complete selection (indeterminate state).[page:1]</li>
+            <li>Localizable UI with multiple language support.[page:1]</li>
+          </ul>
+        </section>
+
+        <section class="section">
+          <h2 class="section-title">How does it work?</h2>
+          <p class="section-text">
+            The extension uses browser APIs to clear site‑specific storage (cookies,
+            localStorage, cache, etc.) for selected origins. Settings are stored locally
+            in browser storage and are preserved across updates.[page:1]
+          </p>
+          <div class="tag-row">
+            <span class="tag">No accounts</span>
+            <span class="tag">No telemetry</span>
+            <span class="tag">No external servers</span>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 class="section-title">Privacy first</h2>
+          <p class="section-text">
+            Completely clearing your browser history is often the instinctive reaction when
+            you want privacy, but that behavior can look suspicious and still leaves temporary
+            data and cache behind.[page:1]
+          </p>
+          <p class="section-text">
+            Web Purge runs fully client‑side and lets you remove cookies, local storage,
+            cache and other data only for the domains you configure and within the time
+            range you select, offering deep cleanup where it matters without erasing your
+            entire history.[page:1]
+          </p>
+          <small>
+            We do not collect or sell your personal information. For full details, see the
+            Privacy Policy.[page:1]
+          </small>
+        </section>
+
+        <section class="section">
+          <h2 class="section-title">Useful links</h2>
+          <ul class="links-list">
+            <li>
+              <a href="https://chromewebstore.google.com/detail/web-purge/pjdkllkjifoeonnpncldkgcfjiajepjb"
+                 target="_blank" rel="noreferrer">
+                Web Purge on Chrome Web Store
+              </a>
+            </li>
+            <li>
+              <a href="https://plus-351.github.io/web-purge/terms.html"
+                 target="_blank" rel="noreferrer">
+                Terms of Use
+              </a>
+            </li>
+            <li>
+              <a href="https://plus-351.github.io/web-purge/privacy.html"
+                 target="_blank" rel="noreferrer">
+                Privacy Policy
+              </a>
+            </li>
+          </ul>
+        </section>
+      </div>
+
+      <!-- Português -->
+      <div class="lang-section" id="lang-pt">
+        <section class="hero">
+          <h1 class="hero-title">
+            Limpe seus rastros na web <br><span>com um único clique</span>
+          </h1>
+          <p class="hero-subtitle">
+            Remova cookies, cache e outros dados de sites específicos sem complicações.
+            Web Purge dá a você controle rápido e seguro sobre o que o navegador guarda.[page:1]
+          </p>
+          <div class="hero-actions">
+            <a class="btn btn-primary"
+               href="https://chromewebstore.google.com/detail/web-purge/pjdkllkjifoeonnpncldkgcfjiajepjb"
+               target="_blank" rel="noreferrer">
+              Adicionar ao Chrome
+            </a>
+            <a class="btn btn-secondary"
+               href="https://github.com/plus-351/web-purge"
+               target="_blank" rel="noreferrer">
+              Ver código no GitHub
+            </a>
+          </div>
+          <div class="hero-meta">
+            Em vez de apagar todo o histórico (algo que pode parecer suspeito),
+            o Web Purge limpa cookies, cache e outros dados apenas dos domínios que você escolher
+            e dentro do intervalo de tempo definido.[page:1]
+          </div>
+
+          <div class="pill-row">
+            <div class="pill">
+              <span class="pill-dot accent"></span>
+              <span>Um clique para limpar o domínio da aba ativa</span>
+            </div>
+            <div class="pill">
+              <span class="pill-dot"></span>
+              <span>Listas de rastreadores, anúncios e redes sociais</span>
+            </div>
+            <div class="pill">
+              <span class="pill-dot"></span>
+              <span>Domínios personalizados criados ativados por padrão</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 class="section-title">O que o Web Purge faz?</h2>
+          <p class="section-text">
+            Web Purge é uma ferramenta leve de privacidade que remove dados do navegador
+            associados a sites específicos ou grupos de domínios (rastreadores, anúncios,
+            redes sociais etc.). Use o popup para limpar rapidamente o site atual ou
+            gerencie categorias e domínios personalizados na página de Opções.[page:1]
+          </p>
+          <ul class="section-list">
+            <li>Limpeza com um clique para o domínio da aba ativa.[page:1]</li>
+            <li>Listas de categorias predefinidas e domínios personalizados.[page:1]</li>
+            <li>Novos domínios personalizados são criados ativados por padrão.[page:1]</li>
+            <li>Categorias mostram seleção parcial/completa (estado indeterminado).[page:1]</li>
+            <li>Interface traduzível com suporte a vários idiomas.[page:1]</li>
+          </ul>
+        </section>
+
+        <section class="section">
+          <h2 class="section-title">Como funciona?</h2>
+          <p class="section-text">
+            A extensão utiliza as APIs do navegador para limpar o armazenamento específico
+            dos sites selecionados (cookies, localStorage, cache etc.). As preferências
+            são armazenadas localmente no navegador e preservadas nas atualizações.[page:1]
+          </p>
+          <div class="tag-row">
+            <span class="tag">Sem contas</span>
+            <span class="tag">Sem telemetria</span>
+            <span class="tag">Sem servidores externos</span>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 class="section-title">Privacidade em primeiro lugar</h2>
+          <p class="section-text">
+            Apagar todo o histórico do navegador costuma ser a reação instintiva quando
+            alguém quer privacidade, mas esse comportamento pode parecer suspeito e ainda
+            assim deixar dados temporários e cache para trás.[page:1]
+          </p>
+          <p class="section-text">
+            O Web Purge funciona totalmente no lado do cliente e permite remover cookies,
+            armazenamento local, cache e outros dados apenas para os domínios configurados
+            e dentro do período de tempo escolhido, garantindo uma limpeza profunda onde
+            importa sem apagar todo o histórico.[page:1]
+          </p>
+          <small>
+            Não coletamos nem vendemos suas informações pessoais. Para mais detalhes,
+            consulte a Política de privacidade.[page:1]
+          </small>
+        </section>
+
+        <section class="section">
+          <h2 class="section-title">Links úteis</h2>
+          <ul class="links-list">
+            <li>
+              <a href="https://chromewebstore.google.com/detail/web-purge/pjdkllkjifoeonnpncldkgcfjiajepjb"
+                 target="_blank" rel="noreferrer">
+                Página do Web Purge na Chrome Web Store
+              </a>
+            </li>
+            <li>
+              <a href="https://plus-351.github.io/web-purge/terms.html"
+                 target="_blank" rel="noreferrer">
+                Termos de uso
+              </a>
+            </li>
+            <li>
+              <a href="https://plus-351.github.io/web-purge/privacy.html"
+                 target="_blank" rel="noreferrer">
+                Política de privacidade
+              </a>
+            </li>
+          </ul>
+        </section>
+      </div>
+
+      <footer class="footer">
+        <div>© <span id="year"></span> Web Purge · Open source</div>
+        <div class="footer-links">
+          <a href="https://github.com/plus-351/web-purge" target="_blank" rel="noreferrer">GitHub</a>
+          <a href="https://plus-351.github.io/web-purge/privacy.html" target="_blank" rel="noreferrer">Privacidad / Privacy</a>
+          <a href="https://plus-351.github.io/web-purge/terms.html" target="_blank" rel="noreferrer">Términos / Terms</a>
+        </div>
+      </footer>
     </div>
-    <ul>
-        <li><a href="terms.html">Terms of Use</a></li>
-        <li><a href="privacy.html">Privacy Policy</a></li>
-    </ul>
-</body>
+  </main>
 
+  <script>
+    // Año dinámico
+    document.getElementById("year").textContent = new Date().getFullYear();
+
+    // Toggle de idiomas
+    const buttons = document.querySelectorAll(".lang-btn");
+    const sections = {
+      es: document.getElementById("lang-es"),
+      en: document.getElementById("lang-en"),
+      pt: document.getElementById("lang-pt")
+    };
+
+    function setLang(lang) {
+      // Secciones
+      Object.keys(sections).forEach(code => {
+        sections[code].classList.toggle("active", code === lang);
+      });
+
+      // Botones
+      buttons.forEach(btn => {
+        btn.classList.toggle("active", btn.dataset.lang === lang);
+      });
+
+      // Subtítulo de marca
+      document.querySelectorAll("[data-i18n-brand-sub-es]")[0].style.display = (lang === "es" ? "block" : "none");
+      document.querySelectorAll("[data-i18n-brand-sub-en]")[0].style.display = (lang === "en" ? "block" : "none");
+      document.querySelectorAll("[data-i18n-brand-sub-pt]")[0].style.display = (lang === "pt" ? "block" : "none");
+
+      // Chip
+      document.querySelectorAll("[data-i18n-chip-es]")[0].style.display = (lang === "es" ? "inline-flex" : "none");
+      document.querySelectorAll("[data-i18n-chip-en]")[0].style.display = (lang === "en" ? "inline-flex" : "none");
+      document.querySelectorAll("[data-i18n-chip-pt]")[0].style.display = (lang === "pt" ? "inline-flex" : "none");
+
+      // Cambia el atributo lang del html para accesibilidad/SEO
+      document.documentElement.lang = lang;
+    }
+
+    buttons.forEach(btn => {
+      btn.addEventListener("click", () => setLang(btn.dataset.lang));
+    });
+
+    // Idioma inicial: español
+    setLang("es");
+  </script>
+</body>
 </html>
