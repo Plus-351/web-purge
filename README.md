@@ -84,7 +84,7 @@ Contributions welcome — please fork, make changes in `src/` (edit `src/_locale
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+Apache 2.0 — see [LICENSE](LICENSE).
 
 ## Contact
 
